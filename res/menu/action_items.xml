@@ -17,5 +17,5 @@
         android:id="@+id/atn_upload"
         android:icon="@drawable/ic_launcher"
         android:title="upload"
-        android:showAsAction="ifRoom|withText" />
+        android:showAsAction="always|withText" />
 </menu>

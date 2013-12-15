@@ -14,6 +14,8 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
+import com.example.android.wifidirect.FileListActivity;
+
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
@@ -101,7 +103,7 @@ public class ContinueFTP {
 				long nowProcess = localSize/step;
 				if (nowProcess > process) {
 					process = nowProcess;
-					Log.e(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
+					//Log.d(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
 				}
 			}
 			ins.close();
@@ -128,7 +130,7 @@ public class ContinueFTP {
 				long nowProcess = localSize/step;
 				if (nowProcess > process) {
 					process = nowProcess;
-					Log.e(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
+					//Log.d(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
 				}
 			}
 			in.close();
@@ -157,7 +159,7 @@ public class ContinueFTP {
 		String remoteFileName = remote;
 		if (remote.contains("/")) {
 			remoteFileName = remote.substring(remote.lastIndexOf("/") + 1);
-			//create directors
+			// TODO create directors
 			
 		}
 		
@@ -208,13 +210,13 @@ public class ContinueFTP {
 			localReadBytes += len;
 			if (localReadBytes/step != process) {
 				process = localReadBytes/step;
-				Log.e(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
+				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
 				Message msg = handler.obtainMessage();
+				msg.what = FileListActivity.TRANSFER_PROGRESS;
 				msg.arg1 = new Long(process).intValue();
 				handler.sendMessage(msg);
 			}
 		}
-		
 		out.flush();
 		raf.close();
 		out.close();
@@ -224,41 +226,6 @@ public class ContinueFTP {
 		} else {
 			result = status ? "Upload_New_File_Success" : "Upload_New_File_Failed";   
 		}
-		
 		return result;
-		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 }
