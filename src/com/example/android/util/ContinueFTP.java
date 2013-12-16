@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
@@ -81,7 +82,7 @@ public class ContinueFTP {
 			return "Remote_File_Noexist";
 		}
 		
-		long remoteSize = files[0].getSize();
+		float remoteSize = files[0].getSize();
 		File f = new File(local);
 		if (f.exists()) {
 			long localSize = f.length();
@@ -95,12 +96,12 @@ public class ContinueFTP {
 			InputStream ins = ftpClient.retrieveFileStream(new String(remote.getBytes("UTF-8"), "iso-8859-1"));
 			byte[] buffer = new byte[1024];
 			int len;
-			long step = remoteSize/100;
-			long process = localSize/step;
+			float step = remoteSize/100;
+			float process = localSize/step;
 			while((len = ins.read(buffer)) != -1) {
 				fos.write(buffer, 0, len);
 				localSize += len;
-				long nowProcess = localSize/step;
+				float nowProcess = localSize/step;
 				if (nowProcess > process) {
 					process = nowProcess;
 					//Log.d(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
@@ -121,13 +122,13 @@ public class ContinueFTP {
 			InputStream in = ftpClient.retrieveFileStream(new String(remote.getBytes("UTF-8"), "iso-8859-1"));
 			byte[] buf = new byte[1024];
 			int len;
-			long step = remoteSize/100;
-			long process = 0;
-			long localSize = 0l;
+			float step = remoteSize/100;
+			float process = 0;
+			long localSize = 0;
 			while((len = in.read(buf)) != -1) {
 				out.write(buf, 0, len);
 				localSize += len;
-				long nowProcess = localSize/step;
+				float nowProcess = localSize/step;
 				if (nowProcess > process) {
 					process = nowProcess;
 					//Log.d(TAG, "localFile: " + f.getAbsolutePath() + "download process: " + process + "%, " + localSize/1024 + "KB");
@@ -169,11 +170,11 @@ public class ContinueFTP {
 			long remoteSize = files[0].getSize();
 			long localSize = f.length();
 			if (remoteSize == localSize) {
-				return "File_Exits";
+				return "File_Exists";
 			} else if (remoteSize > localSize) {
 				return "Remote_Bigger_Local";
 			}
-			
+			handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, handler);
 			// if failed delete and reupload
 			if (result.equals("Upload_From_Break_Failed")) {
@@ -183,6 +184,7 @@ public class ContinueFTP {
 				result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
 			}
 		} else {
+			handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 			result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
 		}
 		return result;
@@ -190,9 +192,9 @@ public class ContinueFTP {
 	
 	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, Handler handler) throws IOException {
 		String result = null;
-		long step = localFile.length()/100;
-		long process = 0;
-		long localReadBytes = 0L;
+		float step = (float)localFile.length()/100;
+		float process = 0;
+		long localReadBytes = 0;
 		RandomAccessFile raf = new RandomAccessFile(localFile, "r");
 		OutputStream out = ftpClient.appendFileStream(new String(remoteFile.getBytes("UTF-8"), "iso-8859-1"));
 		
@@ -213,7 +215,7 @@ public class ContinueFTP {
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
 				Message msg = handler.obtainMessage();
 				msg.what = FileListActivity.TRANSFER_PROGRESS;
-				msg.arg1 = new Long(process).intValue();
+				msg.arg1 = new Float(process).intValue();
 				handler.sendMessage(msg);
 			}
 		}
@@ -228,4 +230,5 @@ public class ContinueFTP {
 		}
 		return result;
 	}
+	
 }

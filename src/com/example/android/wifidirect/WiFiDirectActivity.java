@@ -192,30 +192,8 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
                 return true;
             case R.id.atn_upload:
             	//display sdcard file list
-            	
             	Intent intent = new Intent(this, FileListActivity.class);
             	startActivity(intent);
-            	
-            	/*progressDialog.show();
-            	new Thread(new Runnable() {
-        			public void run() {
-        				ContinueFTP ftpClient = new ContinueFTP(WiFiDirectActivity.this);
-        				try {
-        					boolean result = ftpClient.connect("192.168.1.136", 3721, "a", "a");
-        					if (result) {
-        						final String sdcarPath = Environment.getExternalStorageDirectory().getAbsolutePath(); 
-        						String remote = "¿ì²¥.apk";
-        						String local = sdcarPath + "/" + "¿ì²¥.apk";
-        						
-//        						ftpClient.download(remote, local);
-        						ftpClient.upload(local, remote, mHandler);
-        						progressDialog.dismiss();
-        					}
-        				} catch (IOException e) {
-        					e.printStackTrace();
-        				}
-        			}
-        		}).start();*/
             	return true;
             default:
                 return super.onOptionsItemSelected(item);

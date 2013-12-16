@@ -16,10 +16,17 @@
 
 package com.example.android.wifidirect;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.net.wifi.WpsInfo;
@@ -30,27 +37,18 @@ import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.android.util.FTPUtil;
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPReply;
 
 /**
  * A fragment that manages a particular peer and allows interaction with device
@@ -163,8 +161,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         // server. The file server is single threaded, single connection server
         // socket.
         if (info.groupFormed && info.isGroupOwner) {
-            new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text))
-                    .execute();
+//            new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text)).execute();
+            new FileServerAsyncTask(getActivity(), mContentView).execute();
         } else if (info.groupFormed) {
             // The other device acts as the client. In this case, we enable the
             // get file button.
@@ -206,6 +204,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         view = (TextView) mContentView.findViewById(R.id.status_text);
         view.setText(R.string.empty);
         mContentView.findViewById(R.id.btn_start_client).setVisibility(View.GONE);
+        mContentView.findViewById(R.id.btn_upload).setVisibility(View.GONE);
         this.getView().setVisibility(View.GONE);
     }
 
@@ -217,19 +216,22 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 
         private Context context;
         private TextView statusText;
+        private View contentView;
 
         /**
          * @param context
          * @param statusText
          */
-        public FileServerAsyncTask(Context context, View statusText) {
+        public FileServerAsyncTask(Context context, View contentView) {
             this.context = context;
-            this.statusText = (TextView) statusText;
+            this.contentView = contentView;
+            statusText = (TextView)contentView.findViewById(R.id.status_text);
         }
 
         @Override
         protected String doInBackground(Void... params) {
             try {
+            	System.out.println("don in bakckground");
                 ServerSocket serverSocket = new ServerSocket(8988);
                 Log.d(WiFiDirectActivity.TAG, "Server: Socket opened");
                 Socket client = serverSocket.accept();
@@ -248,34 +250,13 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 String ip = FTPUtil.streamToString(inputstream);
                 Log.d(WiFiDirectActivity.TAG, "device ip : " + ip);
                 if (ip != null) {
-                	FTPUtil.downloadFile(ip, 2323, "/sdcard", "sysinfo");
-                	FileInputStream fis = new FileInputStream(new File("/sdcard/sysinfo"));
-                	String sysinfo = FTPUtil.streamToString(fis);
-                	System.out.println("download resutl========== " + sysinfo);
-//                    FTPClient ftp = new FTPClient();
-//                    int reply;
-//                    ftp.connect("ftp://192.168.1.213", 3721);
-//                    reply = ftp.getReplyCode();
-//                    if (!FTPReply.isPositiveCompletion(reply)) {
-//                    	ftp.disconnect();
-//                    	
-//                    }
-//                    1 get /sysinfo to check version 
-//                    if (version > oldVersion) {
-//                        2 check sdcard update file
-//                        if (exist) {
-//                            ftp put /fw upload the update file to dongle
-//                            get /fwcheck to check file is ok~
-//                            put /upgrade to upgrade the dongle
-//                        }
-//                    }
-                    
                 }
                 copyFile(inputstream, new FileOutputStream(f));
                 serverSocket.close();
-                return f.getAbsolutePath();
+                //return f.getAbsolutePath();
+                return ip;
             } catch (IOException e) {
-                Log.e(WiFiDirectActivity.TAG, e.getMessage());
+                Log.e(WiFiDirectActivity.TAG, "" + e.getMessage());
                 return null;
             }
         }
@@ -292,9 +273,15 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 intent.setAction(android.content.Intent.ACTION_VIEW);
                 intent.setDataAndType(Uri.parse("file://" + result), "image/*");
                 context.startActivity(intent);
-                
             }
-
+            if (result != null) {
+            	statusText.setText(result);
+            	Button uploadBtn = (Button) contentView.findViewById(R.id.btn_upload);
+            	uploadBtn.setVisibility(View.VISIBLE);
+            	Intent intent = new Intent(context, FileListActivity.class);
+				intent.putExtra("device_ip", result);
+				context.startActivity(intent);
+            }
         }
 
         /*
@@ -305,14 +292,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         protected void onPreExecute() {
             statusText.setText("Opening a server socket");
         }
-        
-        @Override
-        protected void onProgressUpdate(Void... values) {
-        	
-        }
 
     }
-
+    
     public static boolean copyFile(InputStream inputStream, OutputStream out) {
         byte buf[] = new byte[1024];
         int len;
