@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
@@ -17,16 +16,15 @@ import org.apache.commons.net.ftp.FTPReply;
 
 import com.example.android.wifidirect.FileListActivity;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 
 public class ContinueFTP {
 	private static final String TAG = "ContinueFTP";
+	public static final String USERNAME = "a";
+	public static final String PASSWORD = "a";
 	
 	FTPClient ftpClient;
 	Context context;

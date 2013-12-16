@@ -15,5 +15,11 @@
     <string name="group_owner_text">"Am I the Group Owner? "</string>
     <string name="label_me">ME</string>
     <string name="label_peers">PEERS</string>
+    
     <string name="upload_button">Upload</string>
+    <string name="up">UP</string>
+    <string name="progeress_title">Upload</string>
+    <string name="cancel">Cancel</string>
+    <string name="upload_success">upload success</string>
+    
 </resources>

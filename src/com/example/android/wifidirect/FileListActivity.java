@@ -85,12 +85,12 @@ public class FileListActivity extends ListActivity implements
 		filePath = (TextView) findViewById(R.id.filepath);
 		filePath.setText(rootDir);
 		upButton = (Button) findViewById(R.id.up);
-		upButton.setText("UP");
+		upButton.setText(getString(R.string.up));
 		upButton.setOnClickListener(this);
 		
 		progressDialog = new ProgressDialog(this);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setTitle("upload");
+        progressDialog.setTitle(getString(R.string.progeress_title));
         progressDialog.setCancelable(true);
 	}
 
@@ -115,10 +115,10 @@ public class FileListActivity extends ListActivity implements
 			adapter.scanFiles(file.getPath());
 		} else {
 			new AlertDialog.Builder(this)
-				.setTitle("Upload")
-				.setMessage("Upload "+ fileName + "?")
+				.setTitle(getString(R.string.progeress_title))
+				.setMessage(getString(R.string.progeress_title) + " "+ fileName + "?")
 				.setIcon(R.drawable.ic_action_on_off)
-				.setPositiveButton("Upload", new DialogInterface.OnClickListener() {
+				.setPositiveButton(getString(R.string.progeress_title), new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						new Thread(new Runnable(){@Override
@@ -127,7 +127,7 @@ public class FileListActivity extends ListActivity implements
 							}}).start();
 					}
 				})
-				.setNegativeButton("cancel", null)
+				.setNegativeButton(getString(R.string.cancel), null)
 				.create().show();
 		}
 	}
@@ -135,9 +135,8 @@ public class FileListActivity extends ListActivity implements
 	private void uploadFile(String deviceIp, String fileName) {
 		ContinueFTP ftpClient = new ContinueFTP(this);
 		try {
-			boolean result = ftpClient.connect(deviceIp, 3721, "a", "a");
+			boolean result = ftpClient.connect(deviceIp, 3721, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
 			if (result) {
-				
 				String remote = fileName;
 				String local = currentPath + "/" + fileName;
 				
@@ -150,7 +149,7 @@ public class FileListActivity extends ListActivity implements
 				}
 				progressDialog.dismiss();
 				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
-					showMessage(fileName + " upload success");
+					showMessage(fileName + " " + getString(R.string.upload_success));
 					FileListActivity.this.finish();
 				}
 			}
@@ -242,6 +241,11 @@ public class FileListActivity extends ListActivity implements
 			}
 		}
 		
+		/**
+		 * 获取未安装apk的图标 ;-)
+		 * @param image
+		 * @param apkPath
+		 */
 		private void showUninstallAPKIcon(ImageView image, String apkPath) {
 	        String PATH_PackageParser = "android.content.pm.PackageParser";
 	        String PATH_AssetManager = "android.content.res.AssetManager";
