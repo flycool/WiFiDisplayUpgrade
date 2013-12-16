@@ -160,8 +160,10 @@ public class ContinueFTP {
 		String remoteFileName = remote;
 		if (remote.contains("/")) {
 			remoteFileName = remote.substring(remote.lastIndexOf("/") + 1);
-			// TODO create directors
-			
+			// create directors
+			if (!createDirectory(remote, ftpClient)) {
+				return "Create_Directory_Fail";
+			}
 		}
 		
 		FTPFile[] files = ftpClient.listFiles(new String(remoteFileName.getBytes("UTF-8"), "iso-8859-1"));
@@ -229,6 +231,37 @@ public class ContinueFTP {
 			result = status ? "Upload_New_File_Success" : "Upload_New_File_Failed";   
 		}
 		return result;
+	}
+	
+	public boolean createDirectory(String remote, FTPClient ftpClient) throws IOException {
+		String directory = remote.substring(0, remote.lastIndexOf("/")+1);
+		if (!directory.equalsIgnoreCase("/") &&
+				!ftpClient.changeWorkingDirectory(new String(directory.getBytes("UTF-8"),"iso-8859-1"))) {
+			int start = 0;
+			int end = 0;
+			if (directory.startsWith("/")) {
+				start = 1;
+			} else {
+				start = 0;
+			}
+			end = directory.indexOf("/", start);
+			while(true) {
+				String subDir = new String(remote.substring(start, end).getBytes("UTF-8"),"iso-8859-1");
+				if (!ftpClient.changeWorkingDirectory(subDir)) {
+					if (ftpClient.makeDirectory(subDir)) {
+						ftpClient.changeWorkingDirectory(subDir);
+					} else {
+						return false;
+					}
+				}
+				start = end + 1;
+				end = directory.indexOf("/", start);
+				if (end <= start) {
+					break;
+				}
+			}
+		}
+		return true;
 	}
 	
 }

@@ -236,22 +236,22 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 Log.d(WiFiDirectActivity.TAG, "Server: Socket opened");
                 Socket client = serverSocket.accept();
                 Log.d(WiFiDirectActivity.TAG, "Server: connection done");
-                final File f = new File(Environment.getExternalStorageDirectory() + "/"
+                /*final File f = new File(Environment.getExternalStorageDirectory() + "/"
                         + context.getPackageName() + "/wifip2pshared-" + System.currentTimeMillis()
                         + ".jpg");
 
                 File dirs = new File(f.getParent());
                 if (!dirs.exists())
                     dirs.mkdirs();
-                f.createNewFile();
+                f.createNewFile();*/
 
-                Log.d(WiFiDirectActivity.TAG, "server: copying files " + f.toString());
+                //Log.d(WiFiDirectActivity.TAG, "server: copying files " + f.toString());
                 InputStream inputstream = client.getInputStream();
                 String ip = FTPUtil.streamToString(inputstream);
                 Log.d(WiFiDirectActivity.TAG, "device ip : " + ip);
                 if (ip != null) {
                 }
-                copyFile(inputstream, new FileOutputStream(f));
+                //copyFile(inputstream, new FileOutputStream(f));
                 serverSocket.close();
                 //return f.getAbsolutePath();
                 return ip;
@@ -267,13 +267,13 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
          */
         @Override
         protected void onPostExecute(String result) {
-            if (result != null) {
+            /*if (result != null) {
                 statusText.setText("File copied - " + result);
                 Intent intent = new Intent();
                 intent.setAction(android.content.Intent.ACTION_VIEW);
                 intent.setDataAndType(Uri.parse("file://" + result), "image/*");
                 context.startActivity(intent);
-            }
+            }*/
             if (result != null) {
             	statusText.setText(result);
             	Button uploadBtn = (Button) contentView.findViewById(R.id.btn_upload);
