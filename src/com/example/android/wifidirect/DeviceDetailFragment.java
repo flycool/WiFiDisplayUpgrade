@@ -231,7 +231,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         @Override
         protected String doInBackground(Void... params) {
             try {
-            	System.out.println("don in bakckground");
                 ServerSocket serverSocket = new ServerSocket(8988);
                 Log.d(WiFiDirectActivity.TAG, "Server: Socket opened");
                 Socket client = serverSocket.accept();
@@ -282,6 +281,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				intent.putExtra("device_ip", result);
 				context.startActivity(intent);
             }
+            statusText.setText(result != null ? result : "null");
         }
 
         /*

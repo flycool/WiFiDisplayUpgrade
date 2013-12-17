@@ -212,23 +212,22 @@ public class FileListActivity extends ListActivity implements
 			currentPath = path;
 		}
 		
-		private int dealWithIcon(ImageView image, File f) {
+		private void dealWithIcon(ImageView image, File f) {
 			int resId = 0;
 			if (f.isDirectory()) {
 				resId = R.drawable.folder;
-				
 			} else {
 				String suffix = f.getName().substring(f.getName().lastIndexOf(".") + 1);
 				if (suffix.equals("apk")) {
-//					resId = R.drawable.apk;
-					//getUninstallApkInfo(image, context, f.getPath());
 					showUninstallAPKIcon(image, f.getPath());
+					return;
+				} else if (suffix.equals("rar")) {
+					resId = R.drawable.rar;
 				} else {
 					resId = R.drawable.file;
 				}
 			}
 			image.setImageResource(resId);
-			return resId;
 		}
 		
 		private void getUninstallApkInfo(ImageView image, Context context, String archiveFilePath) {

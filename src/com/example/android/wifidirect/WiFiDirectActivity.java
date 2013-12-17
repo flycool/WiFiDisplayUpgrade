@@ -16,15 +16,7 @@
 
 package com.example.android.wifidirect;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-import org.apache.commons.net.ftp.FTPClient;
-
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -36,19 +28,14 @@ import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.example.android.util.ContinueFTP;
-import com.example.android.util.FTPUtil;
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
 
 /**
@@ -69,15 +56,6 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     private Channel channel;
     private BroadcastReceiver receiver = null;
     
-    private ProgressDialog progressDialog;
-    private Handler mHandler = new Handler() {
-    	public void handleMessage(android.os.Message msg) {
-    		int progress = msg.arg1;
-    		progressDialog.setProgress(progress);
-    		
-    	};
-    };
-
     /**
      * @param isWifiP2pEnabled the isWifiP2pEnabled to set
      */
@@ -100,11 +78,6 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
-        
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setTitle("upload");
-        progressDialog.setCancelable(true);
         
     }
     
@@ -193,6 +166,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
             case R.id.atn_upload:
             	//display sdcard file list
             	Intent intent = new Intent(this, FileListActivity.class);
+            	intent.putExtra("device_ip", "192.168.1.157");
             	startActivity(intent);
             	return true;
             default:
