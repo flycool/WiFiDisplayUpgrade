@@ -174,7 +174,6 @@ public class ContinueFTP {
 			} else if (remoteSize > localSize) {
 				return "Remote_Bigger_Local";
 			}
-			handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, handler);
 			// if failed delete and reupload
 			if (result.equals("Upload_From_Break_Failed")) {
@@ -184,13 +183,15 @@ public class ContinueFTP {
 				result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
 			}
 		} else {
-			handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 			result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
 		}
 		return result;
 	}
 	
 	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, Handler handler) throws IOException {
+		handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
+//		handler.sendEmptyMessage(FileListActivity.SHOW_NOTIFICATION);
+		
 		String result = null;
 		float step = (float)localFile.length()/100;
 		float process = 0;
@@ -213,10 +214,15 @@ public class ContinueFTP {
 			if (localReadBytes/step != process) {
 				process = localReadBytes/step;
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
-				Message msg = handler.obtainMessage();
+				/*Message msg = handler.obtainMessage();
 				msg.what = FileListActivity.TRANSFER_PROGRESS;
 				msg.arg1 = new Float(process).intValue();
-				handler.sendMessage(msg);
+				handler.sendMessage(msg);*/
+				
+				Message msg2 = handler.obtainMessage();
+				msg2.what = FileListActivity.SHOW_NOTIFICATION;
+				msg2.arg2 = new Float(process).intValue();
+				handler.sendMessage(msg2);
 			}
 		}
 		out.flush();
