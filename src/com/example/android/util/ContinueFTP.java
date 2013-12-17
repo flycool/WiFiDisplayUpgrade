@@ -15,8 +15,14 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
 import com.example.android.wifidirect.FileListActivity;
+import com.example.android.wifidirect.R;
+import com.example.android.wifidirect.WiFiDirectActivity;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -223,6 +229,8 @@ public class ContinueFTP {
 				msg2.what = FileListActivity.SHOW_NOTIFICATION;
 				msg2.arg2 = new Float(process).intValue();
 				handler.sendMessage(msg2);
+				
+				showNotification(new Float(process).intValue());
 			}
 		}
 		out.flush();
@@ -235,6 +243,23 @@ public class ContinueFTP {
 			result = status ? "Upload_New_File_Success" : "Upload_New_File_Failed";   
 		}
 		return result;
+	}
+	
+	private void showNotification(int process) {
+		final NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+    	final Notification.Builder mBuilder = new Notification.Builder(context);
+    	mBuilder.setSmallIcon(R.drawable.upload)
+        .setContentTitle("Upload File")
+        .setContentText("Upload in progress");
+    	Intent resultIntent = new Intent(context, WiFiDirectActivity.class);
+    	PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, resultIntent, 0);
+    	mBuilder.setContentIntent(pendingIntent);
+    	
+    	mBuilder.setProgress(100, process, false);
+    	if (process >= 100) {
+    		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
+    	}
+		nm.notify(0, mBuilder.build());
 	}
 	
 	public boolean createDirectory(String remote, FTPClient ftpClient) throws IOException {
