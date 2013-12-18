@@ -5,20 +5,15 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import com.example.android.util.ContinueFTP;
 
 import android.app.AlertDialog;
 import android.app.ListActivity;
-import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.ProgressDialog;
-import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -30,13 +25,13 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -46,7 +41,7 @@ public class FileListActivity extends ListActivity implements
 		OnItemClickListener, OnClickListener {
 
 	private String currentPath;
-	ProgressDialog progressDialog = null;
+	private ProgressDialog progressDialog = null;
 	private String rootDir = Environment.getExternalStorageDirectory().getPath();
 	private FileAdapter adapter = null;
 	
@@ -60,8 +55,9 @@ public class FileListActivity extends ListActivity implements
 	public static final int SHOW_NOTIFICATION = 4;
 	
 	private NotificationManager nm;
+	private int countThread;
 	
-	private HashMap map = new HashMap();
+	private SparseArray<Handler> map = new SparseArray<Handler>();
 		   
 	private Handler mHandler1 = new Handler() {
     	public void handleMessage(android.os.Message msg) {
@@ -118,7 +114,6 @@ public class FileListActivity extends ListActivity implements
 		adapter.scanFiles(file.getParent());
 	}
 	
-	private int countThread;
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
 		File file = (File) adapter.getItem(pos);
@@ -138,7 +133,8 @@ public class FileListActivity extends ListActivity implements
 						new Thread(new Runnable(){@Override
 							public void run() {
 								countThread++;
-								map.put(countThread, new MutipleNotification(FileListActivity.this).getmHandler());
+								map.put(countThread,
+										new MutipleNotification(FileListActivity.this, nm).getmHandler());
 								uploadFile(deviceIp, fileName, countThread);
 							}}).start();
 					}
@@ -247,6 +243,7 @@ public class FileListActivity extends ListActivity implements
 			image.setImageResource(resId);
 		}
 		
+		@SuppressWarnings("unused")
 		private void getUninstallApkInfo(ImageView image, Context context, String archiveFilePath) {
 			PackageManager pm = context.getPackageManager();
 			PackageInfo info = pm.getPackageArchiveInfo(archiveFilePath, PackageManager.GET_ACTIVITIES);
@@ -270,10 +267,10 @@ public class FileListActivity extends ListActivity implements
 	            // 这是一个Package 解释器, 是隐藏的
 	            // 构造函数的参数只有一个, apk文件的路径
 	            // PackageParser packageParser = new PackageParser(apkPath);
-	            Class pkgParserCls = Class.forName(PATH_PackageParser);
-	            Class[] typeArgs = new Class[1];
+	            Class<?> pkgParserCls = Class.forName(PATH_PackageParser);
+	            Class<?>[] typeArgs = new Class[1];
 	            typeArgs[0] = String.class;
-	            Constructor pkgParserCt = pkgParserCls.getConstructor(typeArgs);
+	            Constructor<?> pkgParserCt = pkgParserCls.getConstructor(typeArgs);
 	            Object[] valueArgs = new Object[1];
 	            valueArgs[0] = apkPath;
 	            Object pkgParser = pkgParserCt.newInstance(valueArgs);
@@ -308,8 +305,8 @@ public class FileListActivity extends ListActivity implements
 	            // AssetManager assmgr = new AssetManager();
 	            // assmgr.addAssetPath(apkPath);
 	            // Resources res = new Resources(assmgr, pRes.getDisplayMetrics(), pRes.getConfiguration());
-	            Class assetMagCls = Class.forName(PATH_AssetManager);
-	            Constructor assetMagCt = assetMagCls.getConstructor((Class[]) null);
+	            Class<?> assetMagCls = Class.forName(PATH_AssetManager);
+	            Constructor<?> assetMagCt = assetMagCls.getConstructor((Class[]) null);
 	            Object assetMag = assetMagCt.newInstance((Object[]) null);
 	            typeArgs = new Class[1];
 	            typeArgs[0] = String.class;
@@ -322,7 +319,7 @@ public class FileListActivity extends ListActivity implements
 	            typeArgs[0] = assetMag.getClass();
 	            typeArgs[1] = res.getDisplayMetrics().getClass();
 	            typeArgs[2] = res.getConfiguration().getClass();
-	            Constructor resCt = Resources.class.getConstructor(typeArgs);
+	            Constructor<Resources> resCt = Resources.class.getConstructor(typeArgs);
 	            valueArgs = new Object[3];
 	            valueArgs[0] = assetMag;
 	            valueArgs[1] = res.getDisplayMetrics();

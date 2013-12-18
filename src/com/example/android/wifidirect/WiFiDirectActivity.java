@@ -17,10 +17,6 @@
 package com.example.android.wifidirect;
 
 import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -38,7 +34,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
@@ -72,8 +67,6 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
-        
         
         // add necessary intent values to be matched.
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
@@ -173,30 +166,6 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
             	Intent intent = new Intent(this, FileListActivity.class);
             	intent.putExtra("device_ip", "192.168.1.170");
             	startActivity(intent);
-            	
-            	/*final NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-            	final Notification.Builder mBuilder = new Notification.Builder(WiFiDirectActivity.this);
-            	mBuilder.setSmallIcon(R.drawable.upload)
-            	.setContentTitle("Upload File")
-            	.setContentText("Upload in progress");
-            	Intent resultIntent = new Intent(WiFiDirectActivity.this, WiFiDirectActivity.class);
-            	PendingIntent pendingIntent = PendingIntent.getActivity(WiFiDirectActivity.this, 0, resultIntent, 0);
-            	mBuilder.setContentIntent(pendingIntent);
-            	new Thread(new Runnable(){@Override
-            		public void run() {
-            		for (int process = 0; process <=100; process+=5) {
-            			mBuilder.setProgress(100, process, false);
-            			nm.notify(0, mBuilder.build());
-            			try {
-							Thread.sleep(500);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-            		}
-            		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
-            		nm.notify(0, mBuilder.build());
-            	}}).start();*/
-            	
             	return true;
             default:
                 return super.onOptionsItemSelected(item);

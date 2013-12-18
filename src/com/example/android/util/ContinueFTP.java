@@ -7,11 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
@@ -23,6 +18,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.example.android.wifidirect.FileListActivity;
 
@@ -33,9 +29,9 @@ public class ContinueFTP {
 	
 	FTPClient ftpClient;
 	Context context;
-	Map<Integer, Handler> map;
+	SparseArray<Handler> map;
 	
-	public ContinueFTP(Context context, Map map) {
+	public ContinueFTP(Context context, SparseArray<Handler> map) {
 		this.context = context;
 		ftpClient = new FTPClient();
 		this.map = map;
@@ -213,6 +209,7 @@ public class ContinueFTP {
 		}
 		byte[] buffer = new byte[1024];
 		int len;
+		final String fileName = localFile.getName();
 		while((len = raf.read(buffer)) != -1) {
 			out.write(buffer, 0, len);
 			localReadBytes += len;
@@ -221,8 +218,9 @@ public class ContinueFTP {
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
 				Message msg = ((Handler)map.get(count)).obtainMessage();
 				msg.what = FileListActivity.SHOW_NOTIFICATION;
-				msg.arg1 = new Float(process).intValue();
+				msg.arg1 = Float.valueOf(process).intValue();
 				msg.arg2 = count;
+				msg.obj = fileName;
 				((Handler) map.get(count)).sendMessage(msg);
 			}
 		}

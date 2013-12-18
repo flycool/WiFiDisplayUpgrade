@@ -14,24 +14,23 @@ public class MutipleNotification {
 
 	private int notificationId;
 	private int oldId;
+	private String fileName;
 	
 	private int process;
-	
 	private Handler mHandler;
-	
 	private NotificationManager nm;
 	
-	public MutipleNotification(Context context) {
-		nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-	
+	public MutipleNotification(Context context, NotificationManager nm) {
+		this.nm = nm;
 		mContext = context;
-		mHandler = new Handler(context.getMainLooper()){
+		mHandler = new Handler(context.getMainLooper()) {
 			@Override
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
 					notificationId = msg.arg2;
+					fileName = (String)msg.obj;
 					if (oldId < notificationId) {
 						showUploadNotification(notificationId);
 						oldId = notificationId;
@@ -46,7 +45,7 @@ public class MutipleNotification {
     	new Thread(new Runnable(){public void run() {
     		final Notification.Builder mBuilder = new Notification.Builder(mContext);
     		mBuilder.setSmallIcon(R.drawable.upload)
-            .setContentTitle("Upload File " + notificationId)
+            .setContentTitle("Upload File " + fileName)
             .setContentText("Upload in progress");
         	Intent resultIntent = new Intent(mContext, WiFiDirectActivity.class);
         	PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, resultIntent, 0);
