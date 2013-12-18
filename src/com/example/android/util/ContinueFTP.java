@@ -7,6 +7,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
@@ -14,18 +19,12 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
-import com.example.android.wifidirect.FileListActivity;
-import com.example.android.wifidirect.R;
-import com.example.android.wifidirect.WiFiDirectActivity;
-
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+
+import com.example.android.wifidirect.FileListActivity;
 
 public class ContinueFTP {
 	private static final String TAG = "ContinueFTP";
@@ -34,10 +33,12 @@ public class ContinueFTP {
 	
 	FTPClient ftpClient;
 	Context context;
+	Map<Integer, Handler> map;
 	
-	public ContinueFTP(Context context) {
+	public ContinueFTP(Context context, Map map) {
 		this.context = context;
 		ftpClient = new FTPClient();
+		this.map = map;
 		//设置将过程中使用到的命令输出到控制台
 		ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
 	}
@@ -156,7 +157,7 @@ public class ContinueFTP {
      * @return 上传结果 
      * @throws IOException 
      */  
-	public String upload(String local, String remote, Handler handler) throws IOException {
+	public String upload(String local, String remote, int count) throws IOException {
 		String result = null;
 		ftpClient.enterLocalPassiveMode();
 		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -180,23 +181,22 @@ public class ContinueFTP {
 			} else if (remoteSize > localSize) {
 				return "Remote_Bigger_Local";
 			}
-			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, handler);
+			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, count);
 			// if failed delete and reupload
 			if (result.equals("Upload_From_Break_Failed")) {
 				if (!ftpClient.deleteFile(remoteFileName)) {
 					return "Delete_Remote_Faild";
 				}
-				result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
+				result = uploadFile(remoteFileName, f, ftpClient, 0, count); 
 			}
 		} else {
-			result = uploadFile(remoteFileName, f, ftpClient, 0, handler); 
+			result = uploadFile(remoteFileName, f, ftpClient, 0, count); 
 		}
 		return result;
 	}
 	
-	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, Handler handler) throws IOException {
-		handler.sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
-//		handler.sendEmptyMessage(FileListActivity.SHOW_NOTIFICATION);
+	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, final int count) throws IOException {
+		((Handler)map.get(count)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 		
 		String result = null;
 		float step = (float)localFile.length()/100;
@@ -211,7 +211,6 @@ public class ContinueFTP {
 			raf.seek(remoteSize);
 			localReadBytes = remoteSize;
 		}
-		
 		byte[] buffer = new byte[1024];
 		int len;
 		while((len = raf.read(buffer)) != -1) {
@@ -220,17 +219,11 @@ public class ContinueFTP {
 			if (localReadBytes/step != process) {
 				process = localReadBytes/step;
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
-				/*Message msg = handler.obtainMessage();
-				msg.what = FileListActivity.TRANSFER_PROGRESS;
+				Message msg = ((Handler)map.get(count)).obtainMessage();
+				msg.what = FileListActivity.SHOW_NOTIFICATION;
 				msg.arg1 = new Float(process).intValue();
-				handler.sendMessage(msg);*/
-				
-				Message msg2 = handler.obtainMessage();
-				msg2.what = FileListActivity.SHOW_NOTIFICATION;
-				msg2.arg2 = new Float(process).intValue();
-				handler.sendMessage(msg2);
-				
-				showNotification(new Float(process).intValue());
+				msg.arg2 = count;
+				((Handler) map.get(count)).sendMessage(msg);
 			}
 		}
 		out.flush();
@@ -243,23 +236,6 @@ public class ContinueFTP {
 			result = status ? "Upload_New_File_Success" : "Upload_New_File_Failed";   
 		}
 		return result;
-	}
-	
-	private void showNotification(int process) {
-		final NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
-    	final Notification.Builder mBuilder = new Notification.Builder(context);
-    	mBuilder.setSmallIcon(R.drawable.upload)
-        .setContentTitle("Upload File")
-        .setContentText("Upload in progress");
-    	Intent resultIntent = new Intent(context, WiFiDirectActivity.class);
-    	PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, resultIntent, 0);
-    	mBuilder.setContentIntent(pendingIntent);
-    	
-    	mBuilder.setProgress(100, process, false);
-    	if (process >= 100) {
-    		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
-    	}
-		nm.notify(0, mBuilder.build());
 	}
 	
 	public boolean createDirectory(String remote, FTPClient ftpClient) throws IOException {

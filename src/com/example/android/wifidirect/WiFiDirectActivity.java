@@ -170,20 +170,20 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
                 return true;
             case R.id.atn_upload:
             	//display sdcard file list
-//            	Intent intent = new Intent(this, FileListActivity.class);
-//            	intent.putExtra("device_ip", "192.168.1.157");
-//            	startActivity(intent);
+            	Intent intent = new Intent(this, FileListActivity.class);
+            	intent.putExtra("device_ip", "192.168.1.170");
+            	startActivity(intent);
             	
+            	/*final NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            	final Notification.Builder mBuilder = new Notification.Builder(WiFiDirectActivity.this);
+            	mBuilder.setSmallIcon(R.drawable.upload)
+            	.setContentTitle("Upload File")
+            	.setContentText("Upload in progress");
+            	Intent resultIntent = new Intent(WiFiDirectActivity.this, WiFiDirectActivity.class);
+            	PendingIntent pendingIntent = PendingIntent.getActivity(WiFiDirectActivity.this, 0, resultIntent, 0);
+            	mBuilder.setContentIntent(pendingIntent);
             	new Thread(new Runnable(){@Override
             		public void run() {
-	            	final NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-	            	final Notification.Builder mBuilder = new Notification.Builder(WiFiDirectActivity.this);
-	            	mBuilder.setSmallIcon(R.drawable.upload)
-			        .setContentTitle("Upload File")
-			        .setContentText("Upload in progress");
-	            	Intent resultIntent = new Intent(WiFiDirectActivity.this, WiFiDirectActivity.class);
-	            	PendingIntent pendingIntent = PendingIntent.getActivity(WiFiDirectActivity.this, 0, resultIntent, 0);
-	            	mBuilder.setContentIntent(pendingIntent);
             		for (int process = 0; process <=100; process+=5) {
             			mBuilder.setProgress(100, process, false);
             			nm.notify(0, mBuilder.build());
@@ -195,7 +195,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
             		}
             		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
             		nm.notify(0, mBuilder.build());
-            	}}).start();
+            	}}).start();*/
             	
             	return true;
             default:

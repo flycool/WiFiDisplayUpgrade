@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.example.android.util.ContinueFTP;
 
@@ -35,6 +36,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -51,87 +53,33 @@ public class FileListActivity extends ListActivity implements
 	private TextView filePath;
 	private Button upButton;
 	private String deviceIp;
-	private int progress;
 	
 	public static final int SHOW_PROGRESS_DIALOG = 1;
 	public static final int TRANSFER_PROGRESS = 2;
 	public static final int SHOW_MESSAGE = 3;
 	public static final int SHOW_NOTIFICATION = 4;
 	
-	private Notification.Builder mBuilder = new Notification.Builder(FileListActivity.this);
-	private NotificationManager mNotificationManager;
+	private NotificationManager nm;
+	
+	private HashMap map = new HashMap();
 		   
-	private Handler mHandler = new Handler() {
+	private Handler mHandler1 = new Handler() {
     	public void handleMessage(android.os.Message msg) {
-    		
     		switch (msg.what) {
 			case SHOW_PROGRESS_DIALOG:
 				progressDialog.show();
 				break;
 			case TRANSFER_PROGRESS:
-				progress = msg.arg1;
-				progressDialog.setProgress(progress);
 				break;
 			case SHOW_MESSAGE:
 				String message = (String)msg.obj;
 				Toast.makeText(FileListActivity.this, message, Toast.LENGTH_LONG).show();
 				break;
-			case SHOW_NOTIFICATION:
-				int pro = msg.arg2;
-				progressDialog.setProgress(pro);
-				
-				mBuilder.setSmallIcon(R.drawable.upload)
-		        .setContentTitle("Upload File")
-		        .setContentText("Upload in progress");
-				// Creates an explicit intent for an Activity in your app
-				Intent resultIntent = new Intent(FileListActivity.this, WiFiDirectActivity.class);
-		
-				// The stack builder object will contain an artificial back stack for the
-				// started Activity.
-				// This ensures that navigating backward from the Activity leads out of
-				// your application to the Home screen.
-				TaskStackBuilder stackBuilder = TaskStackBuilder.create(FileListActivity.this);
-				// Adds the back stack for the Intent (but not the Intent itself)
-				stackBuilder.addParentStack(WiFiDirectActivity.class);
-				// Adds the Intent that starts the Activity to the top of the stack
-				stackBuilder.addNextIntent(resultIntent);
-				PendingIntent resultPendingIntent =
-				        stackBuilder.getPendingIntent(
-				            0,
-				            PendingIntent.FLAG_UPDATE_CURRENT
-				        );
-				mBuilder.setContentIntent(resultPendingIntent);
-				mBuilder.setAutoCancel(true);
-				
-				mBuilder.setProgress(100, pro, false);
-				
-				/*new Thread(new Runnable(){
-					public void run() {
-						while(true) {
-							mBuilder.setProgress(100, progress, false);
-							mNotificationManager.notify(0, mBuilder.build());
-							try {
-	                            Thread.sleep(1*1000);
-	                        } catch (InterruptedException e) {
-	                        }
-							if (progress >= 100) {
-								mBuilder.setContentText("Download complete")
-					            	// Removes the progress bar
-					               	.setProgress(0,0,false);
-								mNotificationManager.notify(0, mBuilder.build());
-								break;
-							}
-						}
-					}
-				}).start();*/
-				
-				// mId allows you to update the notification later on.
-				mNotificationManager.notify(0, mBuilder.build());
-				break;
 			}
+    		
     	};
     };
-	
+    
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -156,7 +104,7 @@ public class FileListActivity extends ListActivity implements
         progressDialog.setTitle(getString(R.string.progeress_title));
         progressDialog.setCancelable(true);
         
-        mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 	}
 
 	@Override
@@ -170,6 +118,7 @@ public class FileListActivity extends ListActivity implements
 		adapter.scanFiles(file.getParent());
 	}
 	
+	private int countThread;
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int pos, long id) {
 		File file = (File) adapter.getItem(pos);
@@ -188,7 +137,9 @@ public class FileListActivity extends ListActivity implements
 					public void onClick(DialogInterface dialog, int which) {
 						new Thread(new Runnable(){@Override
 							public void run() {
-								uploadFile(deviceIp, fileName);
+								countThread++;
+								map.put(countThread, new MutipleNotification(FileListActivity.this).getmHandler());
+								uploadFile(deviceIp, fileName, countThread);
 							}}).start();
 					}
 				})
@@ -197,8 +148,8 @@ public class FileListActivity extends ListActivity implements
 		}
 	}
 	
-	private void uploadFile(String deviceIp, String fileName) {
-		ContinueFTP ftpClient = new ContinueFTP(this);
+	private void uploadFile(String deviceIp, String fileName, int count) {
+		ContinueFTP ftpClient = new ContinueFTP(this, map);
 		try {
 			boolean result = ftpClient.connect(deviceIp, 3721, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
 			if (result) {
@@ -207,7 +158,7 @@ public class FileListActivity extends ListActivity implements
 				String local = currentPath + "/" + fileName;
 				
 //				ftpClient.download(remote, local);
-				String uploadResult = ftpClient.upload(local, remote, mHandler);
+				String uploadResult = ftpClient.upload(local, remote, count);
 				Log.d("FTP", "upload result : " + uploadResult);
 				if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
 					showMessage("File exists");
@@ -225,10 +176,10 @@ public class FileListActivity extends ListActivity implements
 	}
 	
 	private void showMessage(String message) {
-		Message msg = mHandler.obtainMessage();
+		Message msg = mHandler1.obtainMessage();
 		msg.obj = message;
 		msg.what = SHOW_MESSAGE;
-		mHandler.sendMessage(msg);
+		mHandler1.sendMessage(msg);
 	}
 
 	private class FileAdapter extends BaseAdapter {
