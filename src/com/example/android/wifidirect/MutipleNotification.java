@@ -9,6 +9,11 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 
+/**
+ * mutiple notification show the notification progress correctly
+ * @author wzh
+ *
+ */
 public class MutipleNotification {
 	
 	private Context mContext;
@@ -21,6 +26,9 @@ public class MutipleNotification {
 	private Handler mHandler;
 	private ProgressDialog progressDialog;
 	private NotificationManager nm;
+	private boolean isDone;
+	
+	public static final int TASK_DONE = 5;
 	
 	public MutipleNotification(final Context context, NotificationManager nm) {
 		this.nm = nm;
@@ -42,6 +50,9 @@ public class MutipleNotification {
 						oldId = notificationId;
 					}
 					break;
+	    		case TASK_DONE:
+	    			isDone = true;
+					break;
 				}
 			}
 		};
@@ -49,26 +60,38 @@ public class MutipleNotification {
 	
 	private void showUploadNotification(final int notificationId) {
     	new Thread(new Runnable(){public void run() {
+    		
+    		Intent resultIntent = new Intent(mContext, WiFiDirectActivity.class);
+    		PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, resultIntent, 0);
+    		
     		final Notification.Builder mBuilder = new Notification.Builder(mContext);
     		mBuilder.setSmallIcon(R.drawable.upload)
             .setContentTitle("Upload File " + fileName)
-            .setContentText("Upload in progress");
-        	Intent resultIntent = new Intent(mContext, WiFiDirectActivity.class);
-        	PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, resultIntent, 0);
-        	mBuilder.setContentIntent(pendingIntent);
-        	mBuilder.setAutoCancel(true);
+            .setContentText("Upload in progress")
+        	.setContentIntent(pendingIntent)
+        	.setAutoCancel(true);
+    		
+    		int level = 0;
+    		int count = 0;
     		while(true) {
 				mBuilder.setProgress(100, process, false);
-				if (process >= 100) {
-					mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
-					nm.notify(notificationId, mBuilder.build());
-					
-					if (progressDialog != null && progressDialog.isShowing()) {
-						progressDialog.dismiss();
-					}
-					break;
-				}
 		    	nm.notify(notificationId, mBuilder.build());
+		    	
+		    	count++;
+		    	if (count % 3 == 0) {
+		    		level++;
+					if (level == 3) level = 0;
+					mBuilder.setSmallIcon(R.drawable.notification_view, level);
+				}
+		    	
+		    	if (process >= 100 || isDone) {
+		    		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
+		    		nm.notify(notificationId, mBuilder.build());
+		    		if (progressDialog != null && progressDialog.isShowing()) {
+		    			progressDialog.dismiss();
+		    		}
+		    		break;
+		    	}
 		    	try {
 					Thread.sleep(500);
 				} catch (InterruptedException e) {

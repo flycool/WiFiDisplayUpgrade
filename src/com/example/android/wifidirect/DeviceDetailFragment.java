@@ -265,7 +265,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
          * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
          */
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(final String result) {
             /*if (result != null) {
                 statusText.setText("File copied - " + result);
                 Intent intent = new Intent();
@@ -277,9 +277,14 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             	statusText.setText(result);
             	Button uploadBtn = (Button) contentView.findViewById(R.id.btn_upload);
             	uploadBtn.setVisibility(View.VISIBLE);
-            	Intent intent = new Intent(context, FileListActivity.class);
-				intent.putExtra("device_ip", result);
-				context.startActivity(intent);
+            	uploadBtn.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						Intent intent = new Intent(context, FileListActivity.class);
+						intent.putExtra("device_ip", result);
+						context.startActivity(intent);
+					}
+				});
             }
             statusText.setText(result != null ? result : "null");
         }

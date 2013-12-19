@@ -136,13 +136,10 @@ public class FileListActivity extends ListActivity implements
 		try {
 			boolean result = ftpClient.connect(deviceIp, 3721, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
 			if (result) {
-				//display notifiaction
 				String remote = fileName;
 				String local = currentPath + "/" + fileName;
-				
-//				ftpClient.download(remote, local);
 				String uploadResult = ftpClient.upload(local, remote, count);
-				Log.d("FTP", "upload result : " + uploadResult);
+				Log.d("System.out", "upload result : " + uploadResult);
 				if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
 					showMessage("File exists");
 					return;
@@ -156,6 +153,7 @@ public class FileListActivity extends ListActivity implements
 				}
 			}
 		} catch (Exception e) {
+			showMessage(e.getMessage());
 			e.printStackTrace();
 		}
 	}

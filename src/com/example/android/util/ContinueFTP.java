@@ -21,6 +21,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.example.android.wifidirect.FileListActivity;
+import com.example.android.wifidirect.MutipleNotification;
 
 public class ContinueFTP {
 	private static final String TAG = "ContinueFTP";
@@ -228,6 +229,9 @@ public class ContinueFTP {
 		raf.close();
 		out.close();
 		boolean status = ftpClient.completePendingCommand();
+		if (status) {
+			map.get(count).sendEmptyMessage(MutipleNotification.TASK_DONE);
+		}
 		if (remoteSize > 0) {
 			result = status ? "Upload_From_Break_Success" : "Upload_From_Break_Failed";
 		} else {
