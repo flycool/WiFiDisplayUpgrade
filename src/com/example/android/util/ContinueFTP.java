@@ -192,7 +192,7 @@ public class ContinueFTP {
 	}
 	
 	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, final int count) throws IOException {
-		((Handler)map.get(count)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
+		((Handler) map.get(count)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 		
 		String result = null;
 		float step = (float)localFile.length()/100;

@@ -11,7 +11,6 @@ import com.example.android.util.ContinueFTP;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.NotificationManager;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
@@ -41,7 +40,6 @@ public class FileListActivity extends ListActivity implements
 		OnItemClickListener, OnClickListener {
 
 	private String currentPath;
-	private ProgressDialog progressDialog = null;
 	private String rootDir = Environment.getExternalStorageDirectory().getPath();
 	private FileAdapter adapter = null;
 	
@@ -59,20 +57,14 @@ public class FileListActivity extends ListActivity implements
 	
 	private SparseArray<Handler> map = new SparseArray<Handler>();
 		   
-	private Handler mHandler1 = new Handler() {
+	private Handler mHandler = new Handler() {
     	public void handleMessage(android.os.Message msg) {
     		switch (msg.what) {
-			case SHOW_PROGRESS_DIALOG:
-				progressDialog.show();
-				break;
-			case TRANSFER_PROGRESS:
-				break;
 			case SHOW_MESSAGE:
 				String message = (String)msg.obj;
 				Toast.makeText(FileListActivity.this, message, Toast.LENGTH_LONG).show();
 				break;
 			}
-    		
     	};
     };
     
@@ -95,11 +87,6 @@ public class FileListActivity extends ListActivity implements
 		upButton.setText(getString(R.string.up));
 		upButton.setOnClickListener(this);
 		
-		progressDialog = new ProgressDialog(this);
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setTitle(getString(R.string.progeress_title));
-        progressDialog.setCancelable(true);
-        
         nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 	}
 
@@ -160,10 +147,12 @@ public class FileListActivity extends ListActivity implements
 					showMessage("File exists");
 					return;
 				}
-				progressDialog.dismiss();
 				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
 					showMessage(fileName + " " + getString(R.string.upload_success));
-					FileListActivity.this.finish();
+					countThread--;
+					if (countThread == 0) {
+						FileListActivity.this.finish();
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -172,10 +161,10 @@ public class FileListActivity extends ListActivity implements
 	}
 	
 	private void showMessage(String message) {
-		Message msg = mHandler1.obtainMessage();
+		Message msg = mHandler.obtainMessage();
 		msg.obj = message;
 		msg.what = SHOW_MESSAGE;
-		mHandler1.sendMessage(msg);
+		mHandler.sendMessage(msg);
 	}
 
 	private class FileAdapter extends BaseAdapter {

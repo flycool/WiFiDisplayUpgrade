@@ -3,6 +3,7 @@ package com.example.android.wifidirect;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -18,17 +19,22 @@ public class MutipleNotification {
 	
 	private int process;
 	private Handler mHandler;
+	private ProgressDialog progressDialog;
 	private NotificationManager nm;
 	
-	public MutipleNotification(Context context, NotificationManager nm) {
+	public MutipleNotification(final Context context, NotificationManager nm) {
 		this.nm = nm;
 		mContext = context;
 		mHandler = new Handler(context.getMainLooper()) {
 			@Override
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
+				case FileListActivity.SHOW_PROGRESS_DIALOG:
+					initProgressDialog(context);
+					break;
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
+					progressDialog.setProgress(process);
 					notificationId = msg.arg2;
 					fileName = (String)msg.obj;
 					if (oldId < notificationId) {
@@ -56,6 +62,10 @@ public class MutipleNotification {
 				if (process >= 100) {
 					mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
 					nm.notify(notificationId, mBuilder.build());
+					
+					if (progressDialog != null && progressDialog.isShowing()) {
+						progressDialog.dismiss();
+					}
 					break;
 				}
 		    	nm.notify(notificationId, mBuilder.build());
@@ -69,6 +79,13 @@ public class MutipleNotification {
     	};}).start();
 	}
 	
+	private void initProgressDialog(Context context) {
+		progressDialog = new ProgressDialog(context);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setTitle(context.getString(R.string.progeress_title));
+        progressDialog.setCancelable(true);
+        progressDialog.show();
+	}
 	
 	public int getNotificationId() {
 		return notificationId;
