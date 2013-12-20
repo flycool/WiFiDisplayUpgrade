@@ -56,6 +56,7 @@ public class FileListActivity extends ListActivity implements
 	private int countThread;
 	
 	private SparseArray<Handler> map = new SparseArray<Handler>();
+	private SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
 		   
 	private Handler mHandler = new Handler() {
     	public void handleMessage(android.os.Message msg) {
@@ -110,6 +111,14 @@ public class FileListActivity extends ListActivity implements
 			filePath.setText(file.getPath());
 			adapter.scanFiles(file.getPath());
 		} else {
+			for (int i=1; i<=mMutipleNotification.size(); i++) {
+				MutipleNotification mn = mMutipleNotification.get(i);
+				final String uploadingFileName = mn.getFileName();
+				if (uploadingFileName != null && uploadingFileName.equals(fileName)) {
+					showMessage(fileName + " uploading");
+					return;
+				}
+			}
 			new AlertDialog.Builder(this)
 				.setTitle(getString(R.string.progeress_title))
 				.setMessage(getString(R.string.progeress_title) + " "+ fileName + "?")
@@ -120,8 +129,10 @@ public class FileListActivity extends ListActivity implements
 						new Thread(new Runnable(){@Override
 							public void run() {
 								countThread++;
-								map.put(countThread,
-										new MutipleNotification(FileListActivity.this, nm).getmHandler());
+								MutipleNotification mNotification  = new MutipleNotification(FileListActivity.this, nm);
+								map.put(countThread, mNotification.getmHandler());
+								mMutipleNotification.put(countThread, mNotification);
+								
 								uploadFile(deviceIp, fileName, countThread);
 							}}).start();
 					}
@@ -146,6 +157,7 @@ public class FileListActivity extends ListActivity implements
 				}
 				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
 					showMessage(fileName + " " + getString(R.string.upload_success));
+					mMutipleNotification.remove(countThread);
 					countThread--;
 					if (countThread == 0) {
 						FileListActivity.this.finish();

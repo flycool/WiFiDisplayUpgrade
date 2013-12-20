@@ -154,7 +154,7 @@ public class ContinueFTP {
      * @return 上传结果 
      * @throws IOException 
      */  
-	public String upload(String local, String remote, int count) throws IOException {
+	public String upload(String local, String remote, int id) throws IOException {
 		String result = null;
 		ftpClient.enterLocalPassiveMode();
 		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
@@ -178,22 +178,22 @@ public class ContinueFTP {
 			} else if (remoteSize > localSize) {
 				return "Remote_Bigger_Local";
 			}
-			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, count);
+			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, id);
 			// if failed delete and reupload
 			if (result.equals("Upload_From_Break_Failed")) {
 				if (!ftpClient.deleteFile(remoteFileName)) {
 					return "Delete_Remote_Faild";
 				}
-				result = uploadFile(remoteFileName, f, ftpClient, 0, count); 
+				result = uploadFile(remoteFileName, f, ftpClient, 0, id); 
 			}
 		} else {
-			result = uploadFile(remoteFileName, f, ftpClient, 0, count); 
+			result = uploadFile(remoteFileName, f, ftpClient, 0, id); 
 		}
 		return result;
 	}
 	
-	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, final int count) throws IOException {
-		((Handler) map.get(count)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
+	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, final int id) throws IOException {
+		((Handler) map.get(id)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 		
 		String result = null;
 		float step = (float)localFile.length()/100;
@@ -217,12 +217,12 @@ public class ContinueFTP {
 			if (localReadBytes/step != process) {
 				process = localReadBytes/step;
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
-				Message msg = ((Handler)map.get(count)).obtainMessage();
+				Message msg = ((Handler)map.get(id)).obtainMessage();
 				msg.what = FileListActivity.SHOW_NOTIFICATION;
 				msg.arg1 = Float.valueOf(process).intValue();
-				msg.arg2 = count;
+				msg.arg2 = id;
 				msg.obj = fileName;
-				((Handler) map.get(count)).sendMessage(msg);
+				((Handler) map.get(id)).sendMessage(msg);
 			}
 		}
 		out.flush();
@@ -230,7 +230,7 @@ public class ContinueFTP {
 		out.close();
 		boolean status = ftpClient.completePendingCommand();
 		if (status) {
-			map.get(count).sendEmptyMessage(MutipleNotification.TASK_DONE);
+			map.get(id).sendEmptyMessage(MutipleNotification.TASK_DONE);
 		}
 		if (remoteSize > 0) {
 			result = status ? "Upload_From_Break_Success" : "Upload_From_Break_Failed";

@@ -42,7 +42,9 @@ public class MutipleNotification {
 					break;
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
-					progressDialog.setProgress(process);
+					if (progressDialog != null) {
+						progressDialog.setProgress(process);
+					}
 					notificationId = msg.arg2;
 					fileName = (String)msg.obj;
 					if (oldId < notificationId) {
@@ -134,5 +136,20 @@ public class MutipleNotification {
 		this.mHandler = mHandler;
 	}
 
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public boolean isDone() {
+		return isDone;
+	}
+
+	public void setDone(boolean isDone) {
+		this.isDone = isDone;
+	}
 	
 }
