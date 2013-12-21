@@ -1,5 +1,6 @@
 package com.example.android.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -269,6 +270,14 @@ public class ContinueFTP {
 			}
 		}
 		return true;
+	}
+	
+	public void writeRemoteFile(String remote, String content) throws IOException {
+		ByteArrayInputStream bis = new ByteArrayInputStream(content.getBytes());
+		ftpClient.enterLocalPassiveMode();
+		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+		ftpClient.storeFile(remote, bis);
+		bis.close();
 	}
 	
 }

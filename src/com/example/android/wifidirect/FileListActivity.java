@@ -148,6 +148,9 @@ public class FileListActivity extends ListActivity implements
 			boolean result = ftpClient.connect(deviceIp, 3721, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
 			if (result) {
 				String remote = fileName;
+				if (fileName.equals("install.img")) {
+					remote = "fw";
+				}
 				String local = currentPath + "/" + fileName;
 				String uploadResult = ftpClient.upload(local, remote, count);
 				Log.d("System.out", "upload result : " + uploadResult);
