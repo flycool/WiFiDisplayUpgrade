@@ -161,7 +161,6 @@ public class ContinueFTP {
 		File f = new File(local);
 		FileOutputStream out = new FileOutputStream(f);
 		InputStream in = ftpClient.retrieveFileStream(new String(remote.getBytes("UTF-8"), "iso-8859-1"));
-//		ftpClient.retrieveFile(remote, out);
 		byte[] buf = new byte[1024];
 		int len;
 		while((len = in.read(buf)) != -1) {
@@ -169,6 +168,7 @@ public class ContinueFTP {
 		}
 		in.close();
 		out.close();
+		// 必须 inputStream 先 close，completePendingCommand才不会阻塞
 		boolean upNewStatus = ftpClient.completePendingCommand();
 		if (upNewStatus)
 			result = "Download_New_Success";

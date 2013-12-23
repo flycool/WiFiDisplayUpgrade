@@ -136,6 +136,9 @@ public class FileListActivity extends ListActivity implements
 								
 								uploadFile(deviceIp, fileName, countThread, map);
 							}}).start();
+						
+						// TODO start intentService to uploadFile
+						
 					}
 				})
 				.setNegativeButton(getString(R.string.cancel), null)
