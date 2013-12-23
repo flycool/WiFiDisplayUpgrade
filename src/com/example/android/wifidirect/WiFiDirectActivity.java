@@ -37,6 +37,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
+import com.example.android.wifidirect.FileListActivity.DeviceUpgradeListener;
 
 /**
  * An activity that uses WiFi Direct APIs to discover and connect with available
@@ -45,7 +46,8 @@ import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
  * The application should also register a BroadcastReceiver for notification of
  * WiFi state related events.
  */
-public class WiFiDirectActivity extends Activity implements ChannelListener, DeviceActionListener {
+public class WiFiDirectActivity extends Activity implements ChannelListener, DeviceActionListener,
+											DeviceUpgradeListener {
 
     public static final String TAG = "wifidirectdemo";
     private WifiP2pManager manager;
@@ -164,7 +166,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
             case R.id.atn_upload:
             	//display sdcard file list
             	Intent intent = new Intent(this, FileListActivity.class);
-            	intent.putExtra("device_ip", "192.168.1.170");
+            	intent.putExtra("device_ip", "192.168.49.234");
             	startActivity(intent);
             	return true;
             default:
@@ -269,4 +271,14 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
         }
 
     }
+
+	@Override
+	public boolean checkFWFile(long length) {
+		final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
+                .findFragmentById(R.id.frag_detail);
+		
+		System.out.println("main  activity===================");
+		return false;
+	}
+
 }

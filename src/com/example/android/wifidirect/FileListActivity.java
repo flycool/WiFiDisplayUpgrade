@@ -6,13 +6,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import com.example.android.util.ContinueFTP;
-
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -29,12 +28,14 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.BaseAdapter;
+
+import com.example.android.util.ContinueFTP;
 
 public class FileListActivity extends ListActivity implements
 		OnItemClickListener, OnClickListener {
@@ -133,7 +134,7 @@ public class FileListActivity extends ListActivity implements
 								map.put(countThread, mNotification.getmHandler());
 								mMutipleNotification.put(countThread, mNotification);
 								
-								uploadFile(deviceIp, fileName, countThread);
+								uploadFile(deviceIp, fileName, countThread, map);
 							}}).start();
 					}
 				})
@@ -142,17 +143,17 @@ public class FileListActivity extends ListActivity implements
 		}
 	}
 	
-	private void uploadFile(String deviceIp, String fileName, int count) {
-		ContinueFTP ftpClient = new ContinueFTP(this, map);
+	private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
+		ContinueFTP ftpClient = new ContinueFTP(this);
 		try {
-			boolean result = ftpClient.connect(deviceIp, 3721, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+			boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
 			if (result) {
 				String remote = fileName;
 				if (fileName.equals("install.img")) {
-					remote = "fw";
+					remote = "/fw";
 				}
 				String local = currentPath + "/" + fileName;
-				String uploadResult = ftpClient.upload(local, remote, count);
+				String uploadResult = ftpClient.upload(local, remote, count, map);
 				Log.d("System.out", "upload result : " + uploadResult);
 				if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
 					showMessage("File exists");
@@ -165,6 +166,8 @@ public class FileListActivity extends ListActivity implements
 					if (countThread == 0) {
 						FileListActivity.this.finish();
 					}
+					((DeviceUpgradeListener)FileListActivity.this.getParent())
+								.checkFWFile(new File(local).length());
 				}
 			}
 		} catch (Exception e) {
@@ -367,5 +370,9 @@ public class FileListActivity extends ListActivity implements
 			}
 			return show;
 		}
+	}
+	
+	public interface DeviceUpgradeListener {
+		boolean checkFWFile(long length);
 	}
 }

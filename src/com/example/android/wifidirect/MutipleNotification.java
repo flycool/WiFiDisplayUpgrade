@@ -8,13 +8,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 /**
  * mutiple notification show the notification progress correctly
  * @author wzh
  *
  */
-public class MutipleNotification {
+public class MutipleNotification implements Parcelable {
 	
 	private Context mContext;
 
@@ -150,6 +152,16 @@ public class MutipleNotification {
 
 	public void setDone(boolean isDone) {
 		this.isDone = isDone;
+	}
+
+	@Override
+	public int describeContents() {
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		
 	}
 	
 }

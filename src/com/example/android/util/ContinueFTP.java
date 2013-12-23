@@ -26,17 +26,18 @@ import com.example.android.wifidirect.MutipleNotification;
 
 public class ContinueFTP {
 	private static final String TAG = "ContinueFTP";
-	public static final String USERNAME = "a";
-	public static final String PASSWORD = "a";
+	public static final String USERNAME = "ftp";
+	public static final String PASSWORD = "";
+	public static final int PORT = 2121;
+	
+	public static final int FW_VERSION = 990000000;
 	
 	FTPClient ftpClient;
 	Context context;
-	SparseArray<Handler> map;
 	
-	public ContinueFTP(Context context, SparseArray<Handler> map) {
+	public ContinueFTP(Context context) {
 		this.context = context;
 		ftpClient = new FTPClient();
-		this.map = map;
 		//设置将过程中使用到的命令输出到控制台
 		ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
 	}
@@ -67,6 +68,10 @@ public class ContinueFTP {
 		}
 	}
 	
+	public boolean isConnected() {
+		return ftpClient.isConnected();
+	}
+	
 	/** *//** 
      * 从FTP服务器上下载文件,支持断点续传，上传百分比汇报 
      * @param remote 远程文件路径 
@@ -90,7 +95,7 @@ public class ContinueFTP {
 		if (f.exists()) {
 			long localSize = f.length();
 			if (localSize >= remoteSize) {
-				Log.e(TAG, "local file bigger remote file, download terminal");
+				Log.d(TAG, "local file bigger remote file, download terminal");
 				return "Local_Bigger_Remote";
 			}
 			
@@ -148,6 +153,31 @@ public class ContinueFTP {
 		return result;
 	}
 	
+	public String downloadForStupidFTP(String remote, String local) throws IOException {
+		ftpClient.enterLocalPassiveMode();
+		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+		String result = null;
+		
+		File f = new File(local);
+		FileOutputStream out = new FileOutputStream(f);
+		InputStream in = ftpClient.retrieveFileStream(new String(remote.getBytes("UTF-8"), "iso-8859-1"));
+//		ftpClient.retrieveFile(remote, out);
+		byte[] buf = new byte[1024];
+		int len;
+		while((len = in.read(buf)) != -1) {
+			out.write(buf, 0, len);
+		}
+		in.close();
+		out.close();
+		boolean upNewStatus = ftpClient.completePendingCommand();
+		if (upNewStatus)
+			result = "Download_New_Success";
+		else 
+			result = "Download_New_Failed";
+		
+		return result;
+	}
+	
 	/** *//** 
      * 上传文件到FTP服务器，支持断点续传 
      * @param local 本地文件名称，绝对路径 
@@ -155,14 +185,14 @@ public class ContinueFTP {
      * @return 上传结果 
      * @throws IOException 
      */  
-	public String upload(String local, String remote, int id) throws IOException {
+	public String upload(String local, String remote, int id, SparseArray<Handler> handlerMap) throws IOException {
 		String result = null;
 		ftpClient.enterLocalPassiveMode();
 		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 		
 		String remoteFileName = remote;
 		if (remote.contains("/")) {
-			remoteFileName = remote.substring(remote.lastIndexOf("/") + 1);
+			//remoteFileName = remote.substring(remote.lastIndexOf("/") + 1);
 			// create directors
 			if (!createDirectory(remote, ftpClient)) {
 				return "Create_Directory_Fail";
@@ -179,29 +209,31 @@ public class ContinueFTP {
 			} else if (remoteSize > localSize) {
 				return "Remote_Bigger_Local";
 			}
-			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, id);
+			result = uploadFile(remoteFileName, f, ftpClient, remoteSize, id, handlerMap);
 			// if failed delete and reupload
 			if (result.equals("Upload_From_Break_Failed")) {
 				if (!ftpClient.deleteFile(remoteFileName)) {
 					return "Delete_Remote_Faild";
 				}
-				result = uploadFile(remoteFileName, f, ftpClient, 0, id); 
+				result = uploadFile(remoteFileName, f, ftpClient, 0, id, handlerMap); 
 			}
 		} else {
-			result = uploadFile(remoteFileName, f, ftpClient, 0, id); 
+			result = uploadFile(remoteFileName, f, ftpClient, 0, id, handlerMap); 
 		}
 		return result;
 	}
 	
-	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, final int id) throws IOException {
-		((Handler) map.get(id)).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
+	public String uploadFile(String remoteFile, File localFile, FTPClient ftpClient, long remoteSize, 
+			final int id, SparseArray<Handler> handlerMap) throws IOException {
+		handlerMap.get(id).sendEmptyMessage(FileListActivity.SHOW_PROGRESS_DIALOG);
 		
 		String result = null;
 		float step = (float)localFile.length()/100;
 		float process = 0;
 		long localReadBytes = 0;
 		RandomAccessFile raf = new RandomAccessFile(localFile, "r");
-		OutputStream out = ftpClient.appendFileStream(new String(remoteFile.getBytes("UTF-8"), "iso-8859-1"));
+//		OutputStream out = ftpClient.appendFileStream(new String(remoteFile.getBytes("UTF-8"), "iso-8859-1"));
+		OutputStream out = ftpClient.storeFileStream(new String(remoteFile.getBytes("UTF-8"), "iso-8859-1"));
 		
 		if (remoteSize > 0) {
 			ftpClient.setRestartOffset(remoteSize);
@@ -218,12 +250,12 @@ public class ContinueFTP {
 			if (localReadBytes/step != process) {
 				process = localReadBytes/step;
 				//Log.d(TAG, "remoteFile: " + remoteFile + "upload process: " + process + "%, " + localReadBytes/1024 + "KB");
-				Message msg = ((Handler)map.get(id)).obtainMessage();
+				Message msg = handlerMap.get(id).obtainMessage();
 				msg.what = FileListActivity.SHOW_NOTIFICATION;
 				msg.arg1 = Float.valueOf(process).intValue();
 				msg.arg2 = id;
 				msg.obj = fileName;
-				((Handler) map.get(id)).sendMessage(msg);
+				handlerMap.get(id).sendMessage(msg);
 			}
 		}
 		out.flush();
@@ -231,7 +263,7 @@ public class ContinueFTP {
 		out.close();
 		boolean status = ftpClient.completePendingCommand();
 		if (status) {
-			map.get(id).sendEmptyMessage(MutipleNotification.TASK_DONE);
+			handlerMap.get(id).sendEmptyMessage(MutipleNotification.TASK_DONE);
 		}
 		if (remoteSize > 0) {
 			result = status ? "Upload_From_Break_Success" : "Upload_From_Break_Failed";
