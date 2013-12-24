@@ -19,13 +19,13 @@ package com.example.android.wifidirect;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -42,14 +42,12 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.util.ContinueFTP;
 import com.example.android.util.FTPUtil;
@@ -67,9 +65,12 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     private WifiP2pInfo info;
     ProgressDialog progressDialog = null;
     
+    public static Activity instance = null;
+    
 	@Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        instance = getActivity();
     }
 
     @Override
@@ -129,19 +130,22 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        // User has picked an image. Transfer it to group owner i.e peer using
-        // FileTransferService.
-        Uri uri = data.getData();
-        TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
-        statusText.setText("Sending: " + uri);
-        Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
-        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
-        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
-        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
-        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_ADDRESS,
-                info.groupOwnerAddress.getHostAddress());
-        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_PORT, 8988);
-        getActivity().startService(serviceIntent);
+    	if(requestCode == CHOOSE_FILE_RESULT_CODE) {
+	        // User has picked an image. Transfer it to group owner i.e peer using
+	        // FileTransferService.
+	        Uri uri = data.getData();
+	        TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
+	        statusText.setText("Sending: " + uri);
+	        Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
+	        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
+	        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_ADDRESS,
+	                info.groupOwnerAddress.getHostAddress());
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_PORT, 8988);
+	        getActivity().startService(serviceIntent);
+	        
+    	}
     }
 
     @Override
@@ -213,7 +217,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         mContentView.findViewById(R.id.btn_check_fwversion).setVisibility(View.GONE);
         this.getView().setVisibility(View.GONE);
     }
-
+    
     /**
      * A simple server socket that accepts connection and writes some data on
      * the stream.
@@ -250,7 +254,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             try {
                 ServerSocket serverSocket = new ServerSocket(2323);
                 Log.d(WiFiDirectActivity.TAG, "Server: Socket opened");
-                //Socket client = serverSocket.accept();
+                Socket client = serverSocket.accept();
                 Log.d(WiFiDirectActivity.TAG, "Server: connection done");
                 
                 /*final File f = new File(Environment.getExternalStorageDirectory() + "/"
@@ -263,15 +267,15 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 f.createNewFile();*/
 
                 //Log.d(WiFiDirectActivity.TAG, "server: copying files " + f.toString());
-                //InputStream inputstream = client.getInputStream();
-                //String ip = FTPUtil.streamToString(inputstream);
-                //Log.d(WiFiDirectActivity.TAG, "device ip : " + ip);
+                InputStream inputstream = client.getInputStream();
+                String ip = FTPUtil.streamToString(inputstream);
+                Log.d(WiFiDirectActivity.TAG, "device ip : " + ip);
                 
                 //copyFile(inputstream, new FileOutputStream(f));
                 serverSocket.close();
                 //return f.getAbsolutePath();
                 //return ip;
-                return "192.168.49.234";
+                return ip;
             } catch (IOException e) {
                 Log.e(WiFiDirectActivity.TAG, "" + e.getMessage());
                 return null;
@@ -336,29 +340,37 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         	//download sysinfo file
         	new Thread(new Runnable(){@Override
         	public void run() {
-    			downloadVersionInfoFile(ip, localPath);
+        		String ret = downloadVersionInfoFile(ip, localPath);
+    			if (ret.equals("Download_From_Break_Success") ||
+    					ret.equals("Download_New_Success")) {
+    				if (checkFWVersion(localPath)) {
+    					if (dialog != null && dialog.isShowing()) {
+    						dialog.dismiss();
+    					}
+    					Message msg = handler.obtainMessage();
+    					msg.what = 1;
+    					handler.sendMessage(msg);
+    				}
+	        	}
         	}}).start();
         }
         
-        private void downloadVersionInfoFile(String ip, String localPath) {
+        private String downloadVersionInfoFile(String ip, String localPath) {
         	ContinueFTP ftp = new ContinueFTP(context);
         	String downloadResult = null;
         	try {
-	        	if (!ftp.isConnected()) {
-	        		boolean result = ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-	    			if (result) {
-	    				downloadResult = ftp.downloadForStupidFTP("/sysinfo", localPath);
-	    	    	}
-	        	} else {
-	        		downloadResult = ftp.downloadForStupidFTP("/sysinfo", localPath);
-	        	}
-	        	if (downloadResult.equals("Download_From_Break_Success") ||
-	        			downloadResult.equals("Download_New_Success")) {
-	        		checkFWVersion(localPath);
-	        	}
+            	if (!ftp.isConnected()) {
+            		boolean result = ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+        			if (result) {
+        				downloadResult = ftp.downloadForStupidFTP("/sysinfo", localPath);
+        	    	}
+            	} else {
+            		downloadResult = ftp.downloadForStupidFTP("/sysinfo", localPath);
+            	}
         	} catch (IOException e) {
         		e.printStackTrace();
         	}
+        	return downloadResult;
         }
         
         private boolean checkFWVersion(String path) {
@@ -373,22 +385,58 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				int version = FTPUtil.parseFWVersion(result);
 				Log.d("System.out", "FW version=" + version);
 				if (ContinueFTP.FW_VERSION > version) {
-					Message msg = handler.obtainMessage();
-					msg.what = 1;
-					handler.sendMessage(msg);
-					if (dialog != null && dialog.isShowing()) {
-		        		dialog.dismiss();
-		        		file.delete();
-		        		return true;
-		            }
-				}
+	        		return true;
+	            }
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 				return false;
 			}
         	return false;
         }
-        
+    }
+    
+    public String downloadVersionInfoFile(String ip, String localPath) {
+    	ContinueFTP ftp = new ContinueFTP(getActivity());
+    	String downloadResult = null;
+    	try {
+        	if (!ftp.isConnected()) {
+        		boolean result = ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+    			if (result) {
+    				downloadResult = ftp.downloadForStupidFTP("/fwerify.txt", localPath);
+    	    	}
+        	} else {
+        		downloadResult = ftp.downloadForStupidFTP("/fwerify.txt", localPath);
+        	}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
+    	return downloadResult;
+    }
+    
+    
+    public boolean checkFWLength(String path, long length) {
+    	File file = new File(path);
+    	if (!file.exists() || file.length() <= 0) {
+    		return false;
+    	}
+    	FileInputStream inputStream = null;
+		try {
+			inputStream = new FileInputStream(file);
+			String result = FTPUtil.parseStreamContent(inputStream, 0, "=");
+			long len = Long.valueOf(result).longValue();
+			Log.d("System.out", "FW size=" + len);
+			if (len != length) {
+				return true;
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+    }
+    
+    public void showUpdateBtn() {
+    	System.out.println("show===============update");
     }
     
     public static boolean copyFile(InputStream inputStream, OutputStream out) {
@@ -406,6 +454,5 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         }
         return true;
     }
-
 
 }

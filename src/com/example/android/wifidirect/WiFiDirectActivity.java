@@ -17,6 +17,7 @@
 package com.example.android.wifidirect;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +29,9 @@ import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
@@ -58,6 +62,8 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     private Channel channel;
     private BroadcastReceiver receiver = null;
     
+    public static WiFiDirectActivity instance = null;
+    
     /**
      * @param isWifiP2pEnabled the isWifiP2pEnabled to set
      */
@@ -69,6 +75,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        instance = this;
         
         // add necessary intent values to be matched.
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
@@ -166,14 +173,14 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
             case R.id.atn_upload:
             	//display sdcard file list
             	Intent intent = new Intent(this, FileListActivity.class);
-            	intent.putExtra("device_ip", "192.168.49.234");
+            	intent.putExtra("device_ip", "192.168.1.170");
             	startActivity(intent);
             	return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
-
+    
     @Override
     public void showDetails(WifiP2pDevice device) {
         DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
@@ -271,14 +278,41 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
         }
 
     }
-
+    
+    private Handler mHandler = new Handler(){@Override
+    public void handleMessage(Message msg) {
+    	switch (msg.what) {
+		case 1:
+			ProgressDialog dialog = ProgressDialog.show(WiFiDirectActivity.this, "Press back to cancel", "check FW file", true, true);
+			break;
+		}
+    }};
+    
 	@Override
-	public boolean checkFWFile(long length) {
+	public boolean checkFWFile(String ip, long length) {
 		final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
                 .findFragmentById(R.id.frag_detail);
 		
-		System.out.println("main  activity===================");
+		System.out.println("main  activity=======ip============" + ip);
+		System.out.println("main  activity=======length============" + length);
+		
+		Message msg = mHandler.obtainMessage();
+		msg.what = 1;
+		mHandler.sendMessage(msg);
+		
+		final String localPath = Environment.getExternalStorageDirectory() + "/fwerify.txt"; 
+		String result = fragment.downloadVersionInfoFile(ip, localPath);
+		if (result.equals("Download_From_Break_Success") ||
+				result.equals("Download_New_Success")) {
+			if (fragment.checkFWLength(localPath, length)) {
+				fragment.showUpdateBtn();
+				Message msg2 = mHandler.obtainMessage();
+				msg.what = 2;
+				mHandler.sendMessage(msg2);
+			}
+		}
+		
 		return false;
 	}
-
+	
 }

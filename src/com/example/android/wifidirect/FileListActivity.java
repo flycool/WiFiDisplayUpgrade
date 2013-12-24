@@ -6,9 +6,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Fragment;
 import android.app.ListActivity;
 import android.app.NotificationManager;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -52,12 +55,14 @@ public class FileListActivity extends ListActivity implements
 	public static final int TRANSFER_PROGRESS = 2;
 	public static final int SHOW_MESSAGE = 3;
 	public static final int SHOW_NOTIFICATION = 4;
+	public static final int SHOW_CHECK_DIALOG = 5;
 	
+	private ProgressDialog dialog;
 	private NotificationManager nm;
 	private int countThread;
 	
 	private SparseArray<Handler> map = new SparseArray<Handler>();
-	private SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
+	private static SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
 		   
 	private Handler mHandler = new Handler() {
     	public void handleMessage(android.os.Message msg) {
@@ -130,15 +135,18 @@ public class FileListActivity extends ListActivity implements
 						new Thread(new Runnable(){@Override
 							public void run() {
 								countThread++;
-								MutipleNotification mNotification  = new MutipleNotification(FileListActivity.this, nm);
+								MutipleNotification mNotification  = new MutipleNotification(FileListActivity.this);
 								map.put(countThread, mNotification.getmHandler());
 								mMutipleNotification.put(countThread, mNotification);
 								
 								uploadFile(deviceIp, fileName, countThread, map);
 							}}).start();
 						
-						// TODO start intentService to uploadFile
-						
+						// TODO start a Service to uploadFile
+//						Intent intent = new Intent(FileListActivity.this, FileUploadService.class);
+//						intent.putExtra("deviceIp", deviceIp);
+//						intent.putExtra("path", currentPath + "/" + fileName);
+//						FileListActivity.this.startService(intent);
 					}
 				})
 				.setNegativeButton(getString(R.string.cancel), null)
@@ -167,10 +175,10 @@ public class FileListActivity extends ListActivity implements
 					mMutipleNotification.remove(countThread);
 					countThread--;
 					if (countThread == 0) {
-						FileListActivity.this.finish();
+			        	FileListActivity.this.finish();
+			        	((DeviceUpgradeListener)(DeviceDetailFragment.instance)).checkFWFile(deviceIp, new File(local).length());
 					}
-					((DeviceUpgradeListener)FileListActivity.this.getParent())
-								.checkFWFile(new File(local).length());
+					
 				}
 			}
 		} catch (Exception e) {
@@ -178,6 +186,8 @@ public class FileListActivity extends ListActivity implements
 			e.printStackTrace();
 		}
 	}
+	
+	
 	
 	private void showMessage(String message) {
 		Message msg = mHandler.obtainMessage();
@@ -376,6 +386,6 @@ public class FileListActivity extends ListActivity implements
 	}
 	
 	public interface DeviceUpgradeListener {
-		boolean checkFWFile(long length);
+		boolean checkFWFile(String ip, long length);
 	}
 }

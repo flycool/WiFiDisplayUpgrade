@@ -20,11 +20,12 @@ public class FTPUtil {
 
 	public static String streamToString(InputStream inputStream) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		byte buf[] = new byte[1024];
-		int len;
+		byte buf[] = new byte[256];
+		int ava = 0;
 		try {
-			while ((len = inputStream.read(buf)) != -1) {
-				bos.write(buf, 0, len);
+			while((ava = inputStream.available()) > 0) {
+				inputStream.read(buf, 0, ava);
+				bos.write(buf, 0, ava);
 			}
 			bos.close();
 			inputStream.close();

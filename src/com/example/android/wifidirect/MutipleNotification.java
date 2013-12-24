@@ -32,15 +32,15 @@ public class MutipleNotification implements Parcelable {
 	
 	public static final int TASK_DONE = 5;
 	
-	public MutipleNotification(final Context context, NotificationManager nm) {
-		this.nm = nm;
+	public MutipleNotification(final Context context) {
+		nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		mContext = context;
 		mHandler = new Handler(context.getMainLooper()) {
 			@Override
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case FileListActivity.SHOW_PROGRESS_DIALOG:
-					initProgressDialog(context);
+					//initProgressDialog(context);
 					break;
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
