@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.net.SocketException;
 
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
@@ -49,6 +50,7 @@ public class ContinueFTP {
      * @param username 用户名 
      * @param password 密码 
      * @return 是否连接成功 
+	 * @throws SocketException 
      * @throws IOException 
      */  
 	public boolean connect(String hostname, int port, String username, String password) throws IOException {
@@ -56,7 +58,7 @@ public class ContinueFTP {
 		ftpClient.setControlEncoding("UTF-8");
 		if (FTPReply.isPositiveCompletion(ftpClient.getReplyCode())) {
 			if (ftpClient.login(username, password));
-				return true;
+			return true;
 		}
 		disconnect();
 		return false;
@@ -175,6 +177,7 @@ public class ContinueFTP {
 		else 
 			result = "Download_New_Failed";
 		
+		Log.d("System.out", remote + " " + result);
 		return result;
 	}
 	

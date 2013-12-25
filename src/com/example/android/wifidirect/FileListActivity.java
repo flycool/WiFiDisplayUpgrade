@@ -1,20 +1,16 @@
 package com.example.android.wifidirect;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Fragment;
 import android.app.ListActivity;
-import android.app.NotificationManager;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -57,8 +53,6 @@ public class FileListActivity extends ListActivity implements
 	public static final int SHOW_NOTIFICATION = 4;
 	public static final int SHOW_CHECK_DIALOG = 5;
 	
-	private ProgressDialog dialog;
-	private NotificationManager nm;
 	private int countThread;
 	
 	private SparseArray<Handler> map = new SparseArray<Handler>();
@@ -94,7 +88,6 @@ public class FileListActivity extends ListActivity implements
 		upButton.setText(getString(R.string.up));
 		upButton.setOnClickListener(this);
 		
-        nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 	}
 
 	@Override
@@ -117,6 +110,10 @@ public class FileListActivity extends ListActivity implements
 			filePath.setText(file.getPath());
 			adapter.scanFiles(file.getPath());
 		} else {
+			if (!fileName.equals("install.img")) {
+				showMessage("Choose install.img to upload");
+				return;
+			}
 			for (int i=1; i<=mMutipleNotification.size(); i++) {
 				MutipleNotification mn = mMutipleNotification.get(i);
 				final String uploadingFileName = mn.getFileName();
@@ -132,6 +129,7 @@ public class FileListActivity extends ListActivity implements
 				.setPositiveButton(getString(R.string.progeress_title), new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
+						
 						new Thread(new Runnable(){@Override
 							public void run() {
 								countThread++;
@@ -155,10 +153,10 @@ public class FileListActivity extends ListActivity implements
 	}
 	
 	private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
-		ContinueFTP ftpClient = new ContinueFTP(this);
+		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
 		try {
-			boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-			if (result) {
+			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+			if (ftpClient != null) {
 				String remote = fileName;
 				if (fileName.equals("install.img")) {
 					remote = "/fw";
@@ -182,7 +180,8 @@ public class FileListActivity extends ListActivity implements
 				}
 			}
 		} catch (Exception e) {
-			showMessage(e.getMessage());
+			countThread--;
+			showMessage("error: upload install.img again \n" + e.getMessage() + "\n" + countThread);
 			e.printStackTrace();
 		}
 	}

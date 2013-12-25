@@ -279,36 +279,43 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 
     }
     
+    private ProgressDialog dialog;
     private Handler mHandler = new Handler(){@Override
     public void handleMessage(Message msg) {
     	switch (msg.what) {
 		case 1:
-			ProgressDialog dialog = ProgressDialog.show(WiFiDirectActivity.this, "Press back to cancel", "check FW file", true, true);
+			dialog = ProgressDialog.show(WiFiDirectActivity.this, "Press back to cancel", "check FW file", true, true);
 			break;
 		}
     }};
     
+    // this is work at the separate thread to UI
 	@Override
 	public boolean checkFWFile(String ip, long length) {
 		final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
                 .findFragmentById(R.id.frag_detail);
-		
-		System.out.println("main  activity=======ip============" + ip);
-		System.out.println("main  activity=======length============" + length);
-		
 		Message msg = mHandler.obtainMessage();
 		msg.what = 1;
 		mHandler.sendMessage(msg);
 		
-		final String localPath = Environment.getExternalStorageDirectory() + "/fwerify.txt"; 
-		String result = fragment.downloadVersionInfoFile(ip, localPath);
+		final String localPath = Environment.getExternalStorageDirectory() + "/fwverify"; 
+		String result = fragment.downloadVersionInfoFile(ip, localPath, "/fwverify");
 		if (result.equals("Download_From_Break_Success") ||
 				result.equals("Download_New_Success")) {
+			System.out.println("length================" + length);
+			System.out.println("ip================" + ip);
 			if (fragment.checkFWLength(localPath, length)) {
 				fragment.showUpdateBtn();
-				Message msg2 = mHandler.obtainMessage();
-				msg.what = 2;
-				mHandler.sendMessage(msg2);
+				
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			if (dialog != null && dialog.isShowing()) {
+				dialog.dismiss();
 			}
 		}
 		

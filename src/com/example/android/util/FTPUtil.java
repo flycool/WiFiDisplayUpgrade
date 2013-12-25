@@ -27,8 +27,9 @@ public class FTPUtil {
 				inputStream.read(buf, 0, ava);
 				bos.write(buf, 0, ava);
 			}
-			bos.close();
+			bos.flush();
 			inputStream.close();
+			bos.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

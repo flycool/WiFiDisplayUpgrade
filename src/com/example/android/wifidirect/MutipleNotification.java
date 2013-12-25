@@ -40,7 +40,7 @@ public class MutipleNotification implements Parcelable {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case FileListActivity.SHOW_PROGRESS_DIALOG:
-					//initProgressDialog(context);
+					initProgressDialog(context);
 					break;
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
