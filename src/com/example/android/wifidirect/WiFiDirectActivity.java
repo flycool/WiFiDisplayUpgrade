@@ -16,12 +16,9 @@
 
 package com.example.android.wifidirect;
 
-import java.io.File;
-import java.io.IOException;
 
 import android.app.Activity;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,18 +31,14 @@ import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.example.android.util.ContinueFTP;
 import com.example.android.wifidirect.DeviceDetailFragment.DeviceUpgradeListener;
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
 
@@ -71,12 +64,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     public static WiFiDirectActivity instance = null;
     
     //upload
-    private int countThread;
-	private SparseArray<Handler> map = new SparseArray<Handler>();
-	private static SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
 	private String mDeviceIp;
-	private String mFileName;
-	private String mCurrentPath;
 	
     /**
      * @param isWifiP2pEnabled the isWifiP2pEnabled to set
@@ -293,155 +281,46 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 
     }
     
-    private ProgressDialog dialog;
-    private Handler mHandler = new Handler(){@Override
-    public void handleMessage(Message msg) {
-    	switch (msg.what) {
-		case 1:
-			dialog = ProgressDialog.show(WiFiDirectActivity.this, "Press back to cancel", "check FW file", true, true);
-			break;
-		case SHOW_MESSAGE:
-			String message = (String)msg.obj;
-			Toast.makeText(WiFiDirectActivity.this, message, Toast.LENGTH_LONG).show();
-			break;
-		}
-    }};
-
 	@Override
 	public void uploadFile(final String deviceIp, final String fileName, final String currentPath) {
 		mDeviceIp = deviceIp;
-		mFileName = fileName;
-		mCurrentPath = currentPath;
-		System.out.println("call back uploadfile=====");
-		for (int i=1; i<=mMutipleNotification.size(); i++) {
-			MutipleNotification mn = mMutipleNotification.get(i);
-			final String uploadingFileName = mn.getFileName();
-			if (uploadingFileName != null && uploadingFileName.equals(fileName)) {
-				showMessage(fileName + " uploading");
-				return;
-			}
-		}
 		
-		// TODO start a Service to uploadFile
+		// start a Service to uploadFile
 		Intent receveiverIntent = new Intent(this, UploadResultReceiver.class);
 		PendingIntent pi = PendingIntent.getBroadcast(this, 0, receveiverIntent, 0);
 		Bundle bundle = new Bundle();
 		bundle.putParcelable("receiver", pi);
-		
 		Intent serviceIntent = new Intent(this, FileUploadService.class);
-		
 		serviceIntent.putExtra("deviceIp", deviceIp);
 		serviceIntent.putExtra("path", currentPath + "/" + fileName);
-		
 		serviceIntent.putExtras(bundle);
-		
 		startService(serviceIntent);
 		
-		
-		
-		
-		/*new Thread(new Runnable(){@Override
-			public void run() {
-				countThread++;
-				MutipleNotification mNotification  = new MutipleNotification(WiFiDirectActivity.this);
-				map.put(countThread, mNotification.getmHandler());
-				mMutipleNotification.put(countThread, mNotification);
-				
-				uploadFile(deviceIp, fileName, currentPath, countThread, map);
-		}}).start();*/
-		
-	}
-	
-	private void uploadFile(String deviceIp, String fileName, String currentPath, int count, SparseArray<Handler> map) {
-		final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
-                .findFragmentById(R.id.frag_detail);
-		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
-		try {
-			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-			if (ftpClient != null) {
-				String remote = fileName;
-				if (fileName.equals("install.img")) {
-					remote = "/fw";
-				}
-				String local = currentPath + "/" + fileName;
-				String uploadResult = ftpClient.upload(local, remote, count, map);
-				Log.d("System.out", "upload result : " + uploadResult);
-				
-				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
-					showMessage(fileName + " " + getString(R.string.upload_success));
-					mMutipleNotification.remove(countThread);
-					countThread--;
-					if (countThread == 0) {
-						fragment.showUpdateBtn();
-					}
-					
-				}
-			}
-		} catch (Exception e) {
-			mMutipleNotification.remove(countThread);
-			countThread--;
-			showMessage("error: upload install.img again \n" + e.getMessage() + "\n" + countThread);
-			e.printStackTrace();
-		}
 	}
 	
 	// this is work at the separate thread to UI
 	@Override
 	public boolean checkFWFile(long size) {
-		final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
-                .findFragmentById(R.id.frag_detail);
-//		Message msg = mHandler.obtainMessage();
-//		msg.what = 1;
-//		mHandler.sendMessage(msg);
-		
-		String local = mCurrentPath + "/" + mFileName;
-		long length = new File(local).length();
-		
 		final String localPath = Environment.getExternalStorageDirectory() + "/fwverify"; 
 		String result = DeviceDetailFragment.downloadVersionInfoFile(mDeviceIp, localPath, "/fwverify");
 		if (result.equals("Download_From_Break_Success") ||
 				result.equals("Download_New_Success")) {
-			System.out.println("length================" + size);
-			System.out.println("ip================" + mDeviceIp);
 			if (DeviceDetailFragment.checkFWLength(localPath, size)) {
-				System.out.println("length=========ok=======" + length);
-				
-//				try {
-//					Thread.sleep(500);
-//				} catch (InterruptedException e) {
-//					e.printStackTrace();
-//				}
-//				
-//				if (dialog != null && dialog.isShowing()) {
-//					dialog.dismiss();
-//				}
 				return true;
 			}
 		}
-		
 		return false;
-	}
-	
-	private static final int SHOW_MESSAGE = 2;
-	private void showMessage(String message) {
-		Message msg = mHandler.obtainMessage();
-		msg.obj = message;
-		msg.what = SHOW_MESSAGE;
-		mHandler.sendMessage(msg);
 	}
 	
 	public static class UploadResultReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			System.out.println("onReceive=====================");
 			final DeviceDetailFragment fragment = (DeviceDetailFragment) DeviceDetailFragment.instance.getFragmentManager()
 	                .findFragmentById(R.id.frag_detail);
 			if (fragment != null) {
 				fragment.showUpdateBtn();
 			}
-			
 		}
-		
 	}
 	
 }
