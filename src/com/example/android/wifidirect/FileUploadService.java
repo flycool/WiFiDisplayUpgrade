@@ -1,13 +1,13 @@
 package com.example.android.wifidirect;
 
+
 import java.io.File;
 
-import com.example.android.util.ContinueFTP;
-import com.example.android.wifidirect.FileListActivity.DeviceUpgradeListener;
-
+import android.app.PendingIntent;
+import android.app.PendingIntent.CanceledException;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -18,6 +18,8 @@ import android.os.Process;
 import android.util.Log;
 import android.util.SparseArray;
 import android.widget.Toast;
+
+import com.example.android.util.ContinueFTP;
 
 public class FileUploadService extends Service {
 	private Looper mServiceLooper;
@@ -40,21 +42,30 @@ public class FileUploadService extends Service {
 			
 			String deviceIp = bundle.getString("deviceIp");
 			String fileNamePath = bundle.getString("path");
+			PendingIntent receiver = bundle.getParcelable("receiver");
 			
 			countThread++;
-			MutipleNotification mNotification  = new MutipleNotification(FileUploadService.this);
+			MutipleNotification mNotification  = new MutipleNotification(DeviceDetailFragment.instance);
 			map.put(countThread, mNotification.getmHandler());
 			mMutipleNotification.put(countThread, mNotification);
 			uploadFile(deviceIp, fileNamePath, countThread, map);
-//			stopSelf(msg.arg1);
+			
+			try {
+				receiver.send(getApplicationContext(), 0, null);
+			} catch (CanceledException e) {
+				e.printStackTrace();
+			}
+			
+			stopSelf(msg.arg1);
 		}
 	}
 	
 	private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
-		ContinueFTP ftpClient = new ContinueFTP(getApplicationContext());
+//		ContinueFTP ftpClient = new ContinueFTP(this);
+		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
 		try {
-			boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-			if (result) {
+			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+			//if (result) {
 				String remote = fileName;
 				remote = remote.substring(remote.lastIndexOf("/")+1);
 				if (remote.equals("install.img")) {
@@ -69,13 +80,21 @@ public class FileUploadService extends Service {
 				}
 				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
 					//showMessage(fileName + " " + getString(R.string.upload_success));
+					
+					SharedPreferences uploadFlag = getSharedPreferences("upload_process", 0);
+					SharedPreferences.Editor editor = uploadFlag.edit();
+					editor.putInt("upload_done", 1);
+					editor.putLong("file_length", new File(local).length());
+					editor.commit();
+					
+					
 					mMutipleNotification.remove(countThread);
 					--countThread;
 					if (countThread == 0) {
 						
 					}
 				}
-			}
+			//}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

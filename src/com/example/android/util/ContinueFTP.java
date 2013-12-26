@@ -33,16 +33,23 @@ public class ContinueFTP {
 	
 	public static final int FW_VERSION = 990000000;
 	
-	FTPClient ftpClient;
-	Context context;
+	private FTPClient ftpClient;
+	private Context context;
 	
-	public ContinueFTP(Context context) {
-		this.context = context;
+	private static ContinueFTP instance;
+	
+	private ContinueFTP() {
 		ftpClient = new FTPClient();
 		//设置将过程中使用到的命令输出到控制台
 		ftpClient.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
 	}
 	
+	public static ContinueFTP getInstance() {
+		if (instance == null) {
+			return instance = new ContinueFTP();
+		}
+		return instance;
+	}
 	 /** *//** 
      * 连接到FTP服务器 
      * @param hostname 主机名 
@@ -155,7 +162,7 @@ public class ContinueFTP {
 		return result;
 	}
 	
-	public String downloadForStupidFTP(String remote, String local) throws IOException {
+	public String downloadForStupidFTP(String remote, String local) throws Exception {
 		ftpClient.enterLocalPassiveMode();
 		ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 		String result = null;

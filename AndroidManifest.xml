@@ -34,6 +34,9 @@
         <!-- Used for transferring files  after a successful connection -->
         <service android:enabled="true" android:name=".FileTransferService" />
         <service android:enabled="true" android:name=".FileUploadService" />
+        
+        <receiver android:name="com.example.android.wifidirect.WiFiDirectActivity$UploadResultReceiver" />
+        
 
     </application>
 </manifest>

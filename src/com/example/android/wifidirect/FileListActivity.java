@@ -1,7 +1,6 @@
 package com.example.android.wifidirect;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -35,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.util.ContinueFTP;
+import com.example.android.wifidirect.DeviceDetailFragment.DeviceUpgradeListener;
 
 public class FileListActivity extends ListActivity implements
 		OnItemClickListener, OnClickListener {
@@ -53,10 +53,9 @@ public class FileListActivity extends ListActivity implements
 	public static final int SHOW_NOTIFICATION = 4;
 	public static final int SHOW_CHECK_DIALOG = 5;
 	
-	private int countThread;
-	
-	private SparseArray<Handler> map = new SparseArray<Handler>();
-	private static SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
+//	private int countThread;
+//	private SparseArray<Handler> map = new SparseArray<Handler>();
+//	private static SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
 		   
 	private Handler mHandler = new Handler() {
     	public void handleMessage(android.os.Message msg) {
@@ -114,14 +113,6 @@ public class FileListActivity extends ListActivity implements
 				showMessage("Choose install.img to upload");
 				return;
 			}
-			for (int i=1; i<=mMutipleNotification.size(); i++) {
-				MutipleNotification mn = mMutipleNotification.get(i);
-				final String uploadingFileName = mn.getFileName();
-				if (uploadingFileName != null && uploadingFileName.equals(fileName)) {
-					showMessage(fileName + " uploading");
-					return;
-				}
-			}
 			new AlertDialog.Builder(this)
 				.setTitle(getString(R.string.progeress_title))
 				.setMessage(getString(R.string.progeress_title) + " "+ fileName + "?")
@@ -130,7 +121,10 @@ public class FileListActivity extends ListActivity implements
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						
-						new Thread(new Runnable(){@Override
+						((DeviceUpgradeListener)(DeviceDetailFragment.instance)).uploadFile(deviceIp, fileName, currentPath);
+						FileListActivity.this.finish();
+						
+						/*new Thread(new Runnable(){@Override
 							public void run() {
 								countThread++;
 								MutipleNotification mNotification  = new MutipleNotification(FileListActivity.this);
@@ -138,7 +132,7 @@ public class FileListActivity extends ListActivity implements
 								mMutipleNotification.put(countThread, mNotification);
 								
 								uploadFile(deviceIp, fileName, countThread, map);
-							}}).start();
+						}}).start();*/
 						
 						// TODO start a Service to uploadFile
 //						Intent intent = new Intent(FileListActivity.this, FileUploadService.class);
@@ -152,7 +146,7 @@ public class FileListActivity extends ListActivity implements
 		}
 	}
 	
-	private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
+	/*private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
 		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
 		try {
 			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
@@ -174,7 +168,7 @@ public class FileListActivity extends ListActivity implements
 					countThread--;
 					if (countThread == 0) {
 			        	FileListActivity.this.finish();
-			        	((DeviceUpgradeListener)(DeviceDetailFragment.instance)).checkFWFile(deviceIp, new File(local).length());
+//			        	((DeviceUpgradeListener)(DeviceDetailFragment.instance)).checkFWFile(deviceIp, new File(local).length());
 					}
 					
 				}
@@ -184,7 +178,7 @@ public class FileListActivity extends ListActivity implements
 			showMessage("error: upload install.img again \n" + e.getMessage() + "\n" + countThread);
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	
 	
@@ -384,7 +378,4 @@ public class FileListActivity extends ListActivity implements
 		}
 	}
 	
-	public interface DeviceUpgradeListener {
-		boolean checkFWFile(String ip, long length);
-	}
 }

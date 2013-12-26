@@ -28,8 +28,10 @@ import java.net.Socket;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -68,12 +70,14 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     
     public static Activity instance = null;
     public static ContinueFTP ftp;
+    private static long fileLength;
     
 	@Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         instance = getActivity();
-        ftp = new ContinueFTP(getActivity());
+        System.out.println("ftp init=============================");
+        ftp = ContinueFTP.getInstance();
     }
 
     @Override
@@ -128,6 +132,13 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                         startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
                     }
                 });
+        
+        SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
+        int upload_done = sf.getInt("upload_done", 0);
+        fileLength = sf.getLong("file_length", 0);
+        if (upload_done == 1) {
+        	showUpdateBtn();
+        }
         
         return mContentView;
     }
@@ -300,12 +311,14 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             }*/
             if (result != null && !result.equals("")) {
             	statusText.setText(result);
+            	
         	    final Button checkFwversion = (Button) contentView.findViewById(R.id.btn_check_fwversion);
             	checkFwversion.setVisibility(View.VISIBLE);
             	checkFwversion.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						checkForUpdate(context, result);
+						//checkForUpdate(context, result);
+						new CheckVersionAsyncTask(context, contentView).execute(result);
 					}
 				});
             	
@@ -321,7 +334,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             }
         }
 
-        private Handler handler = new Handler(){@Override
+        /*private Handler handler = new Handler(){@Override
         public void handleMessage(Message msg) {
         	switch (msg.what) {
 			case CHECK_VERSION_OK:
@@ -412,26 +425,131 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				return false;
 			}
         	return false;
-        }
+        }*/
         
     }//end task
     
-    public String downloadVersionInfoFile(String ip, String localPath, String fileName) {
-    	String downloadResult = null;
+    public static class CheckVersionAsyncTask extends AsyncTask<String, Void, Boolean> {
+    	
+    	 private Context context;
+         private TextView updateText;
+         private View contentView;
+         private Button uploadBtn;
+
+         public CheckVersionAsyncTask(Context context, View contentView) {
+        	 this.context = context;
+        	 this.contentView = contentView;
+             updateText = (TextView)contentView.findViewById(R.id.upgrade_status);
+         }
+         
+		@Override
+		protected Boolean doInBackground(String... params) {
+			final String ip = params[0];
+			final String localPath = Environment.getExternalStorageDirectory() + "/sysinfo";
+        	//download sysinfo file
+			boolean ok = false;
+    		String ret = downloadVersionInfoFile(ip, localPath, "/sysinfo");
+			if (ret.equals("Download_From_Break_Success") ||
+					ret.equals("Download_New_Success")) {
+				ok = checkFWVersion(localPath);
+				if (ok) {
+					File f = new File(localPath);
+					if (f.exists()) {
+						f.delete();
+					}
+				}
+        	}
+			return ok;
+		}
+    	
+		@Override
+		protected void onPostExecute(Boolean result) {
+			if (result) {
+				uploadBtn = (Button) contentView.findViewById(R.id.btn_upload);
+				uploadBtn.setVisibility(View.VISIBLE);
+				updateText.setText("version update, please upload the install.img file ");
+			}
+		}
+		
+    } //end task
+    
+    public static class CheckUpgradFileAsyncTask extends AsyncTask<String, Void, Boolean> {
+    	
+   	 	private Context context;
+        private View contentView;
+        private Button btnUpgrad;
+
+        public CheckUpgradFileAsyncTask(Context context, View contentView) {
+       	 this.context = context;
+       	 this.contentView = contentView;
+        }
+        
+		@Override
+		protected Boolean doInBackground(String... params) {
+			boolean ok = false;
+			ok = ((DeviceUpgradeListener)context).checkFWFile(fileLength);
+			return ok;
+		}
+   	
+		@Override
+		protected void onPostExecute(Boolean result) {
+			if (result) {
+				btnUpgrad = (Button) contentView.findViewById(R.id.btn_upgrade);
+				btnUpgrad.setVisibility(View.VISIBLE);
+				TextView upgradeStatus = (TextView)contentView.findViewById(R.id.upgrade_status);
+				upgradeStatus.setText("upload file ok, you can upgrade the device");
+				System.out.println("check FW file ok=====");
+			}
+		}
+		
+   } //end task
+    
+    public static String downloadVersionInfoFile(String ip, String localPath, String fileName) {
+    	String downloadResult = "";
     	try {
-    		downloadResult = ftp.downloadForStupidFTP(fileName, localPath);
-    	} catch (IOException e) {
+    		if (!ftp.isConnected()) {
+        		// ftp first connect the whole process only this one connect
+        		boolean result = ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+    			if (result) {
+    				downloadResult = ftp.downloadForStupidFTP(fileName, localPath);
+    	    	}
+        	} else {
+        		downloadResult = ftp.downloadForStupidFTP(fileName, localPath);
+        	}
+    	} catch (Exception e) {
     		System.out.println("download error================" + e.getMessage());
     		e.printStackTrace();
     	}
     	return downloadResult;
     }
     
-    
-    public boolean checkFWLength(String path, long length) {
+    private static boolean checkFWVersion(String path) {
     	File file = new File(path);
     	if (!file.exists() || file.length() <= 0) {
     		return false;
+    	}
+    	FileInputStream inputStream = null;
+		try {
+			inputStream = new FileInputStream(file);
+			String result = FTPUtil.parseStreamContent(inputStream, 2, " ");
+			int version = FTPUtil.parseFWVersion(result);
+			Log.d("System.out", "FW version=" + version);
+			if (ContinueFTP.FW_VERSION > version) {
+        		return true;
+            }
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return false;
+		}
+    	return false;
+    }
+    
+    //call back from WiFiDirectActivity
+    public static boolean checkFWLength(String path, long length) {
+    	boolean ok = false;
+    	File file = new File(path);
+    	if (!file.exists() || file.length() <= 0) {
+    		return ok;
     	}
     	FileInputStream inputStream = null;
 		try {
@@ -440,18 +558,19 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			long len = Long.valueOf(result).longValue();
 			Log.d("System.out", "FW size=" + len);
 			if (len == length) {
-				return true;
+				ok = true;
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			return false;
+			ok = false;
 		}
-		return true;
+		return ok;
     }
     
     private Handler mHandler = new Handler(){@Override
     public void handleMessage(Message msg) {
     	switch (msg.what) {
+    	
 		case 1:
 			upgradeStatus.setText("upload file ok, you can upgrade the device");
 			Button btnUpgrade = (Button)mContentView.findViewById(R.id.btn_upgrade);
@@ -462,9 +581,14 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 						new Thread(new Runnable(){@Override
 						public void run() {
 							try {
-								ftp.writeRemoteFile("/upgrade", "upgrade");
-								if (ftp.isConnected()) {
-									ftp.disconnect();
+								if (((DeviceUpgradeListener)getActivity()).checkFWFile(fileLength)) {
+									System.out.println("checkFWFile ok==================");
+									//ftp.writeRemoteFile("/upgrade", "upgrade");
+									if (ftp.isConnected()) {
+										ftp.disconnect();
+									}
+								} else {
+									//
 								}
 							} catch (IOException e) {
 								e.printStackTrace();
@@ -473,7 +597,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 						
 				}
 			});
-			break;
+	    	break;
 		}
     	
     }};
@@ -488,9 +612,42 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
      */
     
     public void showUpdateBtn() {
-    	Message msg = mHandler.obtainMessage();
+    	/*Message msg = mHandler.obtainMessage();
     	msg.what = 1;
-    	mHandler.sendMessage(msg);
+    	mHandler.sendMessage(msg);*/
+    	upgradeStatus.setText("upload file ok, you can upgrade the device");
+    	Button btnUpgrade = (Button)mContentView.findViewById(R.id.btn_upgrade);
+    	btnUpgrade.setVisibility(View.VISIBLE);
+    	btnUpgrade.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+					new Thread(new Runnable(){@Override
+					public void run() {
+						try {
+							if (((DeviceUpgradeListener)getActivity()).checkFWFile(fileLength)) {
+								System.out.println("checkFWFile ok==================");
+								//ftp.writeRemoteFile("/upgrade", "upgrade");
+								SharedPreferences uploadFlag = DeviceDetailFragment.instance.getSharedPreferences("upload_process", 0);
+								SharedPreferences.Editor editor = uploadFlag.edit();
+								editor.putInt("upload_done", 0);
+								editor.putLong("file_length", 0);
+								fileLength = 0;
+								editor.commit();
+								if (ftp.isConnected()) {
+									ftp.disconnect();
+								}
+							} else {
+								//
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}}).start();
+					
+			}
+		});
+    	
+    	mContentView.findViewById(R.id.btn_upload).setVisibility(View.VISIBLE);
     }
     
     public static boolean copyFile(InputStream inputStream, OutputStream out) {
@@ -508,5 +665,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         }
         return true;
     }
+    
+    public interface DeviceUpgradeListener {
+		boolean checkFWFile(long size);
+		
+		void uploadFile(String deviceIp, String fileName, String currentPath);
+	}
 
 }
