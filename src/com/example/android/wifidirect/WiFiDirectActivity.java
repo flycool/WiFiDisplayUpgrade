@@ -313,6 +313,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	}
 	
 	public static class UploadResultReceiver extends BroadcastReceiver {
+		// receive the FileUploadService result
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			final DeviceDetailFragment fragment = (DeviceDetailFragment) DeviceDetailFragment.instance.getFragmentManager()

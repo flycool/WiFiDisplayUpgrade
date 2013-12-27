@@ -58,6 +58,7 @@ import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
  */
 public class DeviceDetailFragment extends Fragment implements ConnectionInfoListener {
 
+	private static final String TAG = "DeviceDetailFragment";
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     private View mContentView = null;
     private WifiP2pDevice device;
@@ -129,14 +130,24 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                     }
                 });
         
-        SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
+        return mContentView;
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
         int upload_done = sf.getInt("upload_done", 0);
-        fileLength = sf.getLong("file_length", 0);
         if (upload_done == 1) {
         	showUpdateBtn();
         }
-        
-        return mContentView;
+    }
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	
+    	
     }
 
     @Override
@@ -257,7 +268,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         protected String doInBackground(Void... params) {
             try {
             	String ip = "";
-            	for (int i=0; i<6; i++) {
+            	for (int i=0; i<8; i++) {
             		if (ip.equals("")) {
             			ServerSocket serverSocket = new ServerSocket(2323);
                         Socket client = serverSocket.accept();
@@ -269,9 +280,15 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             			break;
             		}
             	}
+
+            	if (!ftp.isConnected()) {
+            		// ftp first connect the whole process only this one connect
+            		ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
+            	}
+            	
                 return ip;
             } catch (IOException e) {
-                Log.e("System.out", e.getMessage());
+                Log.e("System.out", "get ip: " + e.getMessage());
                 return null;
             }
         }
@@ -310,13 +327,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     }//end task
     
     public static class CheckVersionAsyncTask extends AsyncTask<String, Void, Boolean> {
-    	 private Context context;
          private TextView updateText;
          private View contentView;
          private Button uploadBtn;
 
          public CheckVersionAsyncTask(Context context, View contentView) {
-        	 this.context = context;
         	 this.contentView = contentView;
              updateText = (TextView)contentView.findViewById(R.id.upgrade_status);
          }
@@ -396,7 +411,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         		downloadResult = ftp.downloadForStupidFTP(fileName, localPath);
         	}
     	} catch (Exception e) {
-    		Log.e("System.out", e.getMessage());
+    		Log.e("System.out", TAG + " downloadVersionInfoFile() " + e.getMessage());
     		e.printStackTrace();
     	}
     	return downloadResult;
@@ -412,7 +427,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			inputStream = new FileInputStream(file);
 			String result = FTPUtil.parseStreamContent(inputStream, 2, " ");
 			int version = FTPUtil.parseFWVersion(result);
-			Log.d("System.out", "FW version=" + version);
+			Log.d("System.out", TAG + " checkFWVersion() FW version=" + version);
 			if (ContinueFTP.FW_VERSION > version) {
         		return true;
             }
@@ -435,7 +450,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			inputStream = new FileInputStream(file);
 			String result = FTPUtil.parseStreamContent(inputStream, 0, "=");
 			long len = Long.valueOf(result).longValue();
-			Log.d("System.out", "FW size=" + len);
+			Log.d("System.out", TAG + " checkFWLength() local FW size=" + length);
+			Log.d("System.out", TAG + " checkFWLength() remote FW size=" + len);
 			if (len == length) {
 				ok = true;
 			}
@@ -466,6 +482,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				new CheckUpgradFileAsyncTask(DeviceDetailFragment.instance).execute(fileLength);
 			}
 		});
+    	
+    	SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
+        fileLength = sf.getLong("file_length", 0);
     }
     
     public static boolean copyFile(InputStream inputStream, OutputStream out) {
@@ -478,7 +497,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             out.close();
             inputStream.close();
         } catch (IOException e) {
-            Log.d(WiFiDirectActivity.TAG, e.toString());
+            Log.d(TAG, e.toString());
             return false;
         }
         return true;

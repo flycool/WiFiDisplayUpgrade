@@ -27,7 +27,6 @@ public class FileUploadService extends Service {
 	
 	private int countThread;
 	private SparseArray<Handler> map = new SparseArray<Handler>();
-	private SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
 	
 	public FileUploadService() {
 	}
@@ -47,7 +46,6 @@ public class FileUploadService extends Service {
 			countThread++;
 			MutipleNotification mNotification  = new MutipleNotification(DeviceDetailFragment.instance);
 			map.put(countThread, mNotification.getmHandler());
-			mMutipleNotification.put(countThread, mNotification);
 			uploadFile(deviceIp, fileNamePath, countThread, map);
 			
 			try {
@@ -65,37 +63,28 @@ public class FileUploadService extends Service {
 		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
 		try {
 			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-			//if (result) {
-				String remote = fileName;
-				remote = remote.substring(remote.lastIndexOf("/")+1);
-				if (remote.equals("install.img")) {
-					remote = "/fw";
-				}
-				String local = fileName;
-				String uploadResult = ftpClient.upload(local, remote, count, map);
-				Log.d("System.out", "upload result : " + uploadResult);
-				if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
-					//showMessage("File exists");
-					return;
-				}
-				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
-					//showMessage(fileName + " " + getString(R.string.upload_success));
-					
-					SharedPreferences uploadFlag = getSharedPreferences("upload_process", 0);
-					SharedPreferences.Editor editor = uploadFlag.edit();
-					editor.putInt("upload_done", 1);
-					editor.putLong("file_length", new File(local).length());
-					editor.commit();
-					
-					
-					mMutipleNotification.remove(countThread);
-					--countThread;
-					if (countThread == 0) {
-						
-					}
-				}
-			//}
+			String remote = fileName;
+			remote = remote.substring(remote.lastIndexOf("/")+1);
+			if (remote.equals("install.img")) {
+				remote = "/fw";
+			}
+			String local = fileName;
+			String uploadResult = ftpClient.upload(local, remote, count, map);
+			Log.d("System.out", "upload result : " + uploadResult);
+			if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
+				return;
+			}
+			if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
+				
+				SharedPreferences uploadFlag = getSharedPreferences("upload_process", 0);
+				SharedPreferences.Editor editor = uploadFlag.edit();
+				editor.putInt("upload_done", 1);
+				editor.putLong("file_length", new File(local).length());
+				editor.commit();
+				
+			}
 		} catch (Exception e) {
+			Log.e("System.out", "FileUploadService uploadFile() " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -113,6 +102,7 @@ public class FileUploadService extends Service {
 	public int onStartCommand(final Intent intent, int flags, final int startId) {
 		Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
 		
+		// Every request in the new thread's message queue, according to the order processing
 		Bundle bundle = intent.getExtras();
 		Message msg = mServiceHandler.obtainMessage();
 		msg.arg1 = startId;

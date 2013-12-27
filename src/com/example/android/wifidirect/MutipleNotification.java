@@ -40,11 +40,7 @@ public class MutipleNotification implements Parcelable {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case FileListActivity.SHOW_PROGRESS_DIALOG:
-					try {
-						initProgressDialog(context);
-					} catch (Exception e) {
-						System.out.println("progress dialog error====================================" + e.getMessage());
-					}
+					//initProgressDialog(context);
 					break;
 	    		case FileListActivity.SHOW_NOTIFICATION:
 					process = msg.arg1;
@@ -83,8 +79,8 @@ public class MutipleNotification implements Parcelable {
         	.setContentIntent(pendingIntent)
         	.setAutoCancel(true);
     		
-    		int level = 0;
-    		int count = 0;
+    		//int level = 0;
+    		//int count = 0;
     		while(true) {
 				mBuilder.setProgress(100, process, false);
 		    	nm.notify(notificationId, mBuilder.build());
@@ -100,7 +96,7 @@ public class MutipleNotification implements Parcelable {
 		    		mBuilder.setContentText("Upload finish").setProgress(0, 0, false);
 		    		nm.notify(notificationId, mBuilder.build());
 		    		if (progressDialog != null && progressDialog.isShowing()) {
-		    			progressDialog.dismiss();
+	    				progressDialog.dismiss();
 		    		}
 		    		break;
 		    	}
@@ -114,6 +110,7 @@ public class MutipleNotification implements Parcelable {
     	};}).start();
 	}
 	
+	@SuppressWarnings("unused")
 	private void initProgressDialog(Context context) {
 		progressDialog = new ProgressDialog(context);
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);

@@ -16,7 +16,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -34,7 +33,6 @@ public class ContinueFTP {
 	public static final int FW_VERSION = 990000000;
 	
 	private FTPClient ftpClient;
-	private Context context;
 	
 	private static ContinueFTP instance;
 	

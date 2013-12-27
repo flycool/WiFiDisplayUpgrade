@@ -2,21 +2,12 @@ package com.example.android.util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.SocketException;
 import java.util.ArrayList;
 
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
-import org.apache.commons.net.ftp.FTPReply;
-
 public class FTPUtil {
-	private static final String TAG = "FTPUtil";
 
 	public static String streamToString(InputStream inputStream) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();

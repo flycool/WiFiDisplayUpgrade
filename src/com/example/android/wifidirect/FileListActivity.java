@@ -21,7 +21,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -33,7 +32,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.util.ContinueFTP;
 import com.example.android.wifidirect.DeviceDetailFragment.DeviceUpgradeListener;
 
 public class FileListActivity extends ListActivity implements
@@ -53,10 +51,6 @@ public class FileListActivity extends ListActivity implements
 	public static final int SHOW_NOTIFICATION = 4;
 	public static final int SHOW_CHECK_DIALOG = 5;
 	
-//	private int countThread;
-//	private SparseArray<Handler> map = new SparseArray<Handler>();
-//	private static SparseArray<MutipleNotification> mMutipleNotification = new SparseArray<MutipleNotification>();
-		   
 	private Handler mHandler = new Handler() {
     	public void handleMessage(android.os.Message msg) {
     		switch (msg.what) {
@@ -120,67 +114,14 @@ public class FileListActivity extends ListActivity implements
 				.setPositiveButton(getString(R.string.progeress_title), new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						
 						((DeviceUpgradeListener)(DeviceDetailFragment.instance)).uploadFile(deviceIp, fileName, currentPath);
 						FileListActivity.this.finish();
-						
-						/*new Thread(new Runnable(){@Override
-							public void run() {
-								countThread++;
-								MutipleNotification mNotification  = new MutipleNotification(FileListActivity.this);
-								map.put(countThread, mNotification.getmHandler());
-								mMutipleNotification.put(countThread, mNotification);
-								
-								uploadFile(deviceIp, fileName, countThread, map);
-						}}).start();*/
-						
-						// TODO start a Service to uploadFile
-//						Intent intent = new Intent(FileListActivity.this, FileUploadService.class);
-//						intent.putExtra("deviceIp", deviceIp);
-//						intent.putExtra("path", currentPath + "/" + fileName);
-//						FileListActivity.this.startService(intent);
 					}
 				})
 				.setNegativeButton(getString(R.string.cancel), null)
 				.create().show();
 		}
 	}
-	
-	/*private void uploadFile(String deviceIp, String fileName, int count, SparseArray<Handler> map) {
-		ContinueFTP ftpClient = DeviceDetailFragment.ftp;
-		try {
-			//boolean result = ftpClient.connect(deviceIp, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-			if (ftpClient != null) {
-				String remote = fileName;
-				if (fileName.equals("install.img")) {
-					remote = "/fw";
-				}
-				String local = currentPath + "/" + fileName;
-				String uploadResult = ftpClient.upload(local, remote, count, map);
-				Log.d("System.out", "upload result : " + uploadResult);
-				if (uploadResult.equals("File_Exists") || uploadResult.equals("Remote_Bigger_Local")) {
-					showMessage("File exists");
-					return;
-				}
-				if (uploadResult.equals("Upload_From_Break_Success") || uploadResult.equals("Upload_New_File_Success")) {
-					showMessage(fileName + " " + getString(R.string.upload_success));
-					mMutipleNotification.remove(countThread);
-					countThread--;
-					if (countThread == 0) {
-			        	FileListActivity.this.finish();
-//			        	((DeviceUpgradeListener)(DeviceDetailFragment.instance)).checkFWFile(deviceIp, new File(local).length());
-					}
-					
-				}
-			}
-		} catch (Exception e) {
-			countThread--;
-			showMessage("error: upload install.img again \n" + e.getMessage() + "\n" + countThread);
-			e.printStackTrace();
-		}
-	}*/
-	
-	
 	
 	private void showMessage(String message) {
 		Message msg = mHandler.obtainMessage();
