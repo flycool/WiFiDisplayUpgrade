@@ -17,5 +17,5 @@
         android:id="@+id/atn_upload"
         android:icon="@drawable/upload"
         android:title="upload"
-        android:showAsAction="always|withText" />
+        android:showAsAction="never" />
 </menu>

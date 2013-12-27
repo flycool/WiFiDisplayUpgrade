@@ -47,6 +47,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.util.ContinueFTP;
 import com.example.android.util.FTPUtil;
@@ -141,13 +142,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         if (upload_done == 1) {
         	showUpdateBtn();
         }
-    }
-    
-    @Override
-    public void onDestroy() {
-    	super.onDestroy();
-    	
-    	
     }
 
     @Override
@@ -303,6 +297,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             if (result != null && !result.equals("")) {
             	statusText.setText(result);
             	
+            	new CheckVersionAsyncTask(context, contentView).execute(result);
+            	
         	    final Button checkFwversion = (Button) contentView.findViewById(R.id.btn_check_fwversion);
             	checkFwversion.setVisibility(View.VISIBLE);
             	checkFwversion.setOnClickListener(new OnClickListener() {
@@ -379,20 +375,26 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 		@Override
 		protected void onPostExecute(Boolean result) {
 			if (result) {
-				//ftp.writeRemoteFile("/upgrade", "upgrade");
 				SharedPreferences uploadFlag = DeviceDetailFragment.instance.getSharedPreferences("upload_process", 0);
 				SharedPreferences.Editor editor = uploadFlag.edit();
 				editor.putInt("upload_done", 0);
 				editor.putLong("file_length", 0);
 				fileLength = 0;
 				editor.commit();
-				try {
-					if (ftp.isConnected()) {
-						ftp.disconnect();
+				
+				new Thread(new Runnable(){@Override
+				public void run() {
+					try {
+					ftp.writeRemoteFile("/upgrade", "upgrade");
+						if (ftp.isConnected()) {
+							ftp.disconnect();
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				}}).start();
+			} else {
+				Toast.makeText(context, "file error", Toast.LENGTH_LONG).show();
 			}
 		}
 		
