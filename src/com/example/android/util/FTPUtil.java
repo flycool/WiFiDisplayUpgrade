@@ -45,11 +45,24 @@ public class FTPUtil {
 		return null;
 	}
 	
-	public static int parseFWVersion(String version) {
+	public static long parseFWVersion(String version) {
 		//07.00.121316U
+		long ret;
 		String v = version;
-		v = v.substring(0, v.lastIndexOf("U")).replace(".", "");
-		return Integer.valueOf(v).intValue();
+		try {
+			StringBuilder sb = new StringBuilder();
+			for (int i=0; i<version.length(); i++) {
+				char c = v.charAt(i);
+				int ci = (int)v.charAt(i);
+				if ((ci >= 48 && ci <= 57)) {
+					sb.append(c);
+				}
+			}
+			ret = Long.valueOf(sb.toString()).longValue();
+		} catch (Exception e) {
+			return 0;
+		}
+		return ret;
 	}
 
 }

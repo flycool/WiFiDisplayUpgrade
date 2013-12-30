@@ -428,9 +428,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 		try {
 			inputStream = new FileInputStream(file);
 			String result = FTPUtil.parseStreamContent(inputStream, 2, " ");
-			int version = FTPUtil.parseFWVersion(result);
+			long version = FTPUtil.parseFWVersion(result);
 			Log.d("System.out", TAG + " checkFWVersion() FW version=" + version);
-			if (ContinueFTP.FW_VERSION > version) {
+			if (version + 1 > version) {
         		return true;
             }
 		} catch (FileNotFoundException e) {
