@@ -172,12 +172,12 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
                     }
                 });
                 return true;
-            case R.id.atn_upload:
+            /*case R.id.atn_upload:
             	//test: display sdcard file list 
             	Intent intent = new Intent(this, FileListActivity.class);
             	intent.putExtra("device_ip", "192.168.1.170");
             	startActivity(intent);
-            	return true;
+            	return true;*/
             default:
                 return super.onOptionsItemSelected(item);
         }

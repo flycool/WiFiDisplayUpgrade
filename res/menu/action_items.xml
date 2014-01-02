@@ -13,9 +13,9 @@
         android:title="@string/discover_peers_button"
         android:showAsAction="ifRoom|withText" />
     
-    <item 
+   <!--  <item 
         android:id="@+id/atn_upload"
         android:icon="@drawable/upload"
         android:title="upload"
-        android:showAsAction="never" />
+        android:showAsAction="never" /> -->
 </menu>
