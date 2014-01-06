@@ -172,12 +172,12 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
                     }
                 });
                 return true;
-            /*case R.id.atn_upload:
-            	//test: display sdcard file list 
-            	Intent intent = new Intent(this, FileListActivity.class);
-            	intent.putExtra("device_ip", "192.168.1.170");
-            	startActivity(intent);
-            	return true;*/
+            case R.id.atn_check_update:
+            	final DeviceDetailFragment deviceFragment = (DeviceDetailFragment) getFragmentManager()
+                		.findFragmentById(R.id.frag_detail);
+            	deviceFragment.checkForUpdate();
+            	
+            	return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -283,6 +283,11 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     
 	@Override
 	public void uploadFile(final String deviceIp, final String fileName, final String currentPath) {
+		 final DeviceDetailFragment fragment = (DeviceDetailFragment) getFragmentManager()
+	                .findFragmentById(R.id.frag_detail);
+		fragment.hideUpgradeBtn();
+		DeviceDetailFragment.resetUploadFlag();
+		
 		mDeviceIp = deviceIp;
 		
 		// start a Service to uploadFile

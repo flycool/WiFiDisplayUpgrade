@@ -62,8 +62,10 @@ public class ContinueFTP {
 		ftpClient.connect(hostname, port);
 		ftpClient.setControlEncoding("UTF-8");
 		if (FTPReply.isPositiveCompletion(ftpClient.getReplyCode())) {
-			if (ftpClient.login(username, password));
-			return true;
+			if (ftpClient.login(username, password)) {
+				ftpClient.setKeepAlive(true);
+				return true;
+			}
 		}
 		disconnect();
 		return false;

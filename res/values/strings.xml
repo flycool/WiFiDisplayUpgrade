@@ -21,7 +21,7 @@
     <string name="progeress_title">Upload</string>
     <string name="cancel">Cancel</string>
     <string name="upload_success">upload success</string>
-    <string name="check_fwversion">Check for Updates</string>
+    <string name="check_fwversion">Check for Update</string>
     <string name="check_fwfile">Verify file</string>
     <string name="upgrade">Upgrade</string>
     

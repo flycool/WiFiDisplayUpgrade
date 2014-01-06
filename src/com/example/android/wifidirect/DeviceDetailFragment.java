@@ -65,8 +65,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     private WifiP2pDevice device;
     private WifiP2pInfo info;
     ProgressDialog progressDialog = null;
-    private TextView upgradeStatus;
     
+    private TextView upgradeStatus;
     public static Activity instance = null;
     public static ContinueFTP ftp;
     private static long fileLength;
@@ -135,16 +135,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     }
     
     @Override
-    public void onResume() {
-    	super.onResume();
-    	SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
-        int upload_done = sf.getInt("upload_done", 0);
-        if (upload_done == 1) {
-        	showUpdateBtn();
-        }
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
     	if(requestCode == CHOOSE_FILE_RESULT_CODE) {
@@ -172,7 +162,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         }
         this.info = info;
         this.getView().setVisibility(View.VISIBLE);
-
+        
         // The owner IP is now known.
         TextView view = (TextView) mContentView.findViewById(R.id.group_owner);
         view.setText(getResources().getString(R.string.group_owner_text)
@@ -187,7 +177,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         // server. The file server is single threaded, single connection server
         // socket.
         if (info.groupFormed && info.isGroupOwner) {
-//            new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text)).execute();
             new FileServerAsyncTask(getActivity(), mContentView).execute();
         } else if (info.groupFormed) {
             // The other device acts as the client. In this case, we enable the
@@ -236,6 +225,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         mContentView.findViewById(R.id.btn_check_fwversion).setVisibility(View.GONE);
         mContentView.findViewById(R.id.btn_upgrade).setVisibility(View.GONE);
         this.getView().setVisibility(View.GONE);
+        
+        resetFTP();
+        resetUploadFlag();
     }
     
     /**
@@ -262,7 +254,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         protected String doInBackground(Void... params) {
             try {
             	String ip = "";
-            	for (int i=0; i<8; i++) {
+            	for (int i=0; i<10; i++) {
             		if (ip.equals("")) {
             			ServerSocket serverSocket = new ServerSocket(2323);
                         Socket client = serverSocket.accept();
@@ -274,12 +266,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             			break;
             		}
             	}
-
-            	if (!ftp.isConnected()) {
-            		// ftp first connect the whole process only this one connect
-            		ftp.connect(ip, ContinueFTP.PORT, ContinueFTP.USERNAME, ContinueFTP.PASSWORD);
-            	}
-            	
                 return ip;
             } catch (IOException e) {
                 Log.e("System.out", "get ip: " + e.getMessage());
@@ -299,8 +285,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             	
             	new CheckVersionAsyncTask(context, contentView).execute(result);
             	
+            	showUpdateBtn();
+            	
         	    final Button checkFwversion = (Button) contentView.findViewById(R.id.btn_check_fwversion);
-            	checkFwversion.setVisibility(View.VISIBLE);
+            	//checkFwversion.setVisibility(View.VISIBLE);
             	checkFwversion.setOnClickListener(new OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -317,6 +305,24 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 						context.startActivity(intent);
 					}
 				});
+            }
+        }
+        
+        private void showUpdateBtn() {
+        	SharedPreferences sf = instance.getSharedPreferences("upload_process", 0);
+            int upload_done = sf.getInt("upload_done", 0);
+            if (upload_done == 1) {
+            	contentView.findViewById(R.id.btn_upload).setVisibility(View.VISIBLE);
+            	Button btnUpgrade = (Button)contentView.findViewById(R.id.btn_upgrade);
+            	btnUpgrade.setVisibility(View.VISIBLE);
+            	btnUpgrade.setOnClickListener(new OnClickListener() {
+        			@Override
+        			public void onClick(View v) {
+        				new CheckUpgradFileAsyncTask(DeviceDetailFragment.instance).execute(fileLength);
+        			}
+        		});
+            	
+                fileLength = sf.getLong("file_length", 0);
             }
         }
         
@@ -357,7 +363,13 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			if (result) {
 				uploadBtn = (Button) contentView.findViewById(R.id.btn_upload);
 				uploadBtn.setVisibility(View.VISIBLE);
-				updateText.setText("version update, please upload the install.img file ");
+				final SharedPreferences sf = instance.getSharedPreferences("upload_process", 0);
+	            final int uploadFlag = sf.getInt("upload_done", 0);
+	            if (uploadFlag == 1) {
+	            	updateText.setText("upload file ok, you can upgrade the device");
+	            } else {
+	            	updateText.setText("version update, please upload the install.img file");
+	            }
 			}
 		}
 		
@@ -375,12 +387,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 		@Override
 		protected void onPostExecute(Boolean result) {
 			if (result) {
-				SharedPreferences uploadFlag = DeviceDetailFragment.instance.getSharedPreferences("upload_process", 0);
-				SharedPreferences.Editor editor = uploadFlag.edit();
-				editor.putInt("upload_done", 0);
-				editor.putLong("file_length", 0);
-				fileLength = 0;
-				editor.commit();
+				resetUploadFlag();
 				
 				new Thread(new Runnable(){@Override
 				public void run() {
@@ -388,6 +395,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 					ftp.writeRemoteFile("/upgrade", "upgrade");
 						if (ftp.isConnected()) {
 							ftp.disconnect();
+							ftp = null;
 						}
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -413,9 +421,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         		downloadResult = ftp.downloadForStupidFTP(fileName, localPath);
         	}
     	} catch (Exception e) {
-    		Log.e("System.out", TAG + " downloadVersionInfoFile() " + e.getMessage());
-    		e.printStackTrace();
-    	}
+			Log.e("System.out", TAG + " downloadVersionInfoFile() " + e.getMessage());
+		}
     	return downloadResult;
     }
     
@@ -464,6 +471,29 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 		return ok;
     }
     
+    public static void resetFTP() {
+    	if (ftp != null && ftp.isConnected()) {
+    		try {
+				ftp.disconnect();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    public void checkForUpdate() {
+    	mContentView.findViewById(R.id.btn_check_fwversion).performClick();
+    }
+    
+    public static void resetUploadFlag() {
+    	SharedPreferences uploadFlag = DeviceDetailFragment.instance.getSharedPreferences("upload_process", 0);
+		SharedPreferences.Editor editor = uploadFlag.edit();
+		editor.putInt("upload_done", 0);
+		editor.putLong("file_length", 0);
+		fileLength = 0;
+		editor.commit();
+    }
+    
     /**
      *	ftp flow 
      *	get /sysinfo (get system info)
@@ -487,6 +517,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     	
     	SharedPreferences sf = getActivity().getSharedPreferences("upload_process", 0);
         fileLength = sf.getLong("file_length", 0);
+    }
+    
+    public void hideUpgradeBtn() {
+    	mContentView.findViewById(R.id.btn_upgrade).setVisibility(View.GONE);
     }
     
     public static boolean copyFile(InputStream inputStream, OutputStream out) {

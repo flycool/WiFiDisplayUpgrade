@@ -13,9 +13,9 @@
         android:title="@string/discover_peers_button"
         android:showAsAction="ifRoom|withText" />
     
-   <!--  <item 
-        android:id="@+id/atn_upload"
-        android:icon="@drawable/upload"
-        android:title="upload"
-        android:showAsAction="never" /> -->
+    <item 
+        android:id="@+id/atn_check_update"
+        android:icon="@drawable/ic_launcher"
+        android:title="@string/check_fwversion"
+        android:showAsAction="withText|collapseActionView" />
 </menu>
