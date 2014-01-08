@@ -387,16 +387,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 		@Override
 		protected void onPostExecute(Boolean result) {
 			if (result) {
-				resetUploadFlag();
-				
 				new Thread(new Runnable(){@Override
 				public void run() {
 					try {
-					ftp.writeRemoteFile("/upgrade", "upgrade");
-						if (ftp.isConnected()) {
-							ftp.disconnect();
-							ftp = null;
-						}
+						ftp.writeRemoteFile("/upgrade", "upgrade");
+						((DeviceActionListener) instance).disconnect();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
